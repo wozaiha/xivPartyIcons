@@ -2,9 +2,12 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
+using System.Reflection.Emit;
 using System.Threading.Tasks;
+using Dalamud;
 using Dalamud.Game;
 using Dalamud.Game.Network;
+using Dalamud.Hooking;
 using Dalamud.Logging;
 using Newtonsoft.Json;
 using PartyIcons.Configuration;
@@ -29,6 +32,10 @@ public sealed class PartyListHUDUpdater : IDisposable
 
     private const string OpcodesUrl = "https://raw.githubusercontent.com/karashiiro/FFXIVOpcodes/master/opcodes.min.json";
     private List<int> _prepareZoningOpcodes = new();
+
+    private const string PrepareZoningSig = "44 0F B6 C2 48 8B D1 48 8D 0D ?? ?? ?? ??";
+    private delegate long PrepareZoningDelegate(long a1, byte a2);
+    private Hook<PrepareZoningDelegate> _prepareZoningHook;
 
     public PartyListHUDUpdater(PartyListHUDView view, RoleTracker roleTracker, Settings configuration)
     {
@@ -55,10 +62,17 @@ public sealed class PartyListHUDUpdater : IDisposable
         Service.GameNetwork.NetworkMessage -= OnNetworkMessage;
         Service.Framework.Update -= OnUpdate;
         _roleTracker.OnAssignedRolesUpdated -= OnAssignedRolesUpdated;
+        _prepareZoningHook?.Dispose();
     }
 
     private async Task DownloadOpcodes()
     {
+        if ((int)Service.ClientState.ClientLanguage == 4) //CN server
+        {
+            _prepareZoningHook = Hook<PrepareZoningDelegate>.FromAddress(Service.SigScanner.ScanText(PrepareZoningSig),PrepareZoning);
+            _prepareZoningHook.Enable();
+            return;
+        }
         var client = new HttpClient();
         var data = await client.GetStringAsync(OpcodesUrl);
         dynamic json = JsonConvert.DeserializeObject(data)!;
@@ -79,6 +93,15 @@ public sealed class PartyListHUDUpdater : IDisposable
                 }
             }
         }
+    }
+
+    private long PrepareZoning(long a1, byte a2)
+    {
+        var result = _prepareZoningHook.Original(a1, a2);
+        PluginLog.Verbose("PartyListHUDUpdater Forcing update due to zoning");
+        // PluginLog.Verbose(_view.GetDebugInfo());
+        UpdatePartyListHUD();
+        return result;
     }
 
     private void OnEnterPvP()

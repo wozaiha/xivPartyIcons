@@ -311,7 +311,8 @@ public class XivApi : IDisposable
 
         public SafeNamePlateInfo(IntPtr pointer)
         {
-            Pointer = pointer; //-0x10;
+            Pointer = pointer; 
+            if ((int) Service.ClientState.ClientLanguage == 4) Pointer -= 0x10;  //CN server
             Data = Marshal.PtrToStructure<RaptureAtkModule.NamePlateInfo>(Pointer);
         }
 
