@@ -1,8 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Runtime.InteropServices;
 using Dalamud.Game.Text.SeStringHandling;
 using Dalamud.Game.Text.SeStringHandling.Payloads;
+using Dalamud.Memory;
 
 namespace PartyIcons.Utils;
 
@@ -72,7 +74,7 @@ public static class SeStringUtils
         return seString;
     }
 
-    public static SeString Icon(BitmapFontIcon icon, string prefix = null)
+    public static SeString Icon(BitmapFontIcon icon, string? prefix = null)
     {
         var seString = new SeString(new List<Payload>());
 
@@ -84,5 +86,11 @@ public static class SeStringUtils
         seString.Append(new IconPayload(icon));
 
         return seString;
+    }
+
+    public static string PrintRawStringArg(IntPtr arg)
+    {
+        var seString = MemoryHelper.ReadSeStringNullTerminated(arg);
+        return string.Join("", seString.Payloads.Select(payload => $"[{payload}]"));
     }
 }

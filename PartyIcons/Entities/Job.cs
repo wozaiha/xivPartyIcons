@@ -1,7 +1,10 @@
 using System;
+using System.Diagnostics.CodeAnalysis;
 
 namespace PartyIcons.Entities;
 
+[SuppressMessage("ReSharper", "InconsistentNaming", Justification = "To match in-game case")]
+[SuppressMessage("ReSharper", "UnusedMember.Global", Justification = "To match in-game job list")]
 public enum Job : uint
 {
     ADV = 0,
@@ -47,10 +50,14 @@ public enum Job : uint
     SGE = 40
 }
 
+public static class JobConstants
+{
+    public const int MaxJob = (int)Job.SGE;
+}
+
 public static class JobExtensions
 {
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("Style", "IDE0066:Convert switch statement to expression",
-        Justification = "No, it looks dumb")]
+    [SuppressMessage("Style", "IDE0066:Convert switch statement to expression", Justification = "No, it looks dumb")]
     public static GenericRole GetRole(this Job job)
     {
         switch (job)

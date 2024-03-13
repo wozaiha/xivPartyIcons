@@ -1,5 +1,8 @@
-﻿namespace PartyIcons.Entities;
+﻿using System.Diagnostics.CodeAnalysis;
 
+namespace PartyIcons.Entities;
+
+[SuppressMessage("ReSharper", "InconsistentNaming", Justification = "To match in-game case")]
 public enum RoleId
 {
     Undefined,

@@ -11,7 +11,6 @@ namespace PartyIcons.Runtime;
 /// </summary>
 public sealed class NPCNameplateFixer : IDisposable
 {
-    private const uint NoTarget = 0xE0000000;
     private readonly NameplateView _view;
 
     public NPCNameplateFixer(NameplateView view)
@@ -37,71 +36,25 @@ public sealed class NPCNameplateFixer : IDisposable
 
     private void RevertNPC()
     {
-        var addon = XivApi.GetSafeAddonNamePlate();
+        var reader = new NamePlateArrayReader();
+        if (!reader.HasValidPointer())
+            return;
 
-        for (var i = 0; i < 50; i++)
-        {
-            var npObject = addon.GetNamePlateObject(i);
-
-            if (npObject == null || !npObject.IsVisible)
-            {
-                continue;
-            }
-
-            var npInfo = npObject.NamePlateInfo;
-
-            if (npInfo == null)
-            {
-                continue;
-            }
-
-            var actorID = npInfo.Data.ObjectID.ObjectID;
-
-            if (actorID == NoTarget)
-            {
-                continue;
-            }
-
-            var isPC = npInfo.IsPlayerCharacter();
-
-            if (!isPC && _view.SetupDefault(npObject))
-            {
-                Service.Log.Verbose($"Reverted NPC {actorID} (#{i})");
+        for (var i = 0; i < NamePlateArrayReader.NumNameplates; i++) {
+            if (reader.GetUnchecked(i) is { IsVisible: true, IsPlayer: false } npObject) {
+                _view.SetupDefault(npObject);
             }
         }
     }
 
     private void RevertAll()
     {
-        var addon = XivApi.GetSafeAddonNamePlate();
+        var reader = new NamePlateArrayReader();
+        if (!reader.HasValidPointer())
+            return;
 
-        for (var i = 0; i < 50; i++)
-        {
-            var npObject = addon.GetNamePlateObject(i);
-
-            if (npObject == null)
-            {
-                continue;
-            }
-
-            var npInfo = npObject.NamePlateInfo;
-
-            if (npInfo == null)
-            {
-                continue;
-            }
-
-            var actorID = npInfo.Data.ObjectID.ObjectID;
-
-            if (actorID == NoTarget)
-            {
-                continue;
-            }
-
-            if (_view.SetupDefault(npObject))
-            {
-                Service.Log.Verbose($"Reverted {actorID} (#{i})");
-            }
+        for (var i = 0; i < NamePlateArrayReader.NumNameplates; i++) {
+            _view.SetupDefault(reader.GetUnchecked(i));
         }
     }
 }

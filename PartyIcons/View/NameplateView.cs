@@ -3,6 +3,7 @@ using System.Numerics;
 using Dalamud.Game.ClientState.Objects.SubKinds;
 using Dalamud.Game.Text.SeStringHandling;
 using Dalamud.Game.Text.SeStringHandling.Payloads;
+using Dalamud.Logging;
 using PartyIcons.Api;
 using PartyIcons.Configuration;
 using PartyIcons.Entities;
@@ -40,10 +41,11 @@ public sealed class NameplateView : IDisposable
     public void Dispose() { }
 
     /// <returns>True if the icon or name scale was changed (different from default).</returns>
-    public bool SetupDefault(XivApi.SafeNamePlateObject npObject)
+    public bool SetupDefault(NamePlateObjectWrapper npObject)
     {
-        return npObject.SetIconScale(1f) &&
-               npObject.SetNameScale(0.5f);
+        var iconScaleChanged = npObject.SetIconScale(1f);
+        var nameScaleChanged = npObject.SetNameScale(0.5f);
+        return iconScaleChanged || nameScaleChanged;
     }
 
     /// <summary>
@@ -51,7 +53,7 @@ public sealed class NameplateView : IDisposable
     /// </summary>
     /// <param name="npObject">The nameplate object to modify.</param>
     /// <param name="forceIcon">Whether modes that do not normally support icons should be adjusted to show an icon.</param>
-    public void SetupForPC(XivApi.SafeNamePlateObject npObject, bool forceIcon)
+    public void SetupForPC(NamePlateObjectWrapper npObject, bool forceIcon)
     {
         var nameScale = 0.75f;
         var iconScale = 1f;
@@ -156,22 +158,24 @@ public sealed class NameplateView : IDisposable
         }
 
         npObject.SetIconPosition((short) iconOffset.X, (short) iconOffset.Y);
-        _ = npObject.SetIconScale(iconScale);
-        _ = npObject.SetNameScale(nameScale);
+        npObject.SetIconScale(iconScale);
+        npObject.SetNameScale(nameScale);
     }
 
     public void NameplateDataForPC(
-        XivApi.SafeNamePlateObject npObject,
+        NamePlateObjectWrapper npObject,
         ref bool isPrefixTitle,
         ref bool displayTitle,
         ref IntPtr title,
         ref IntPtr name,
         ref IntPtr fcName,
-        ref int iconID
+        ref uint iconID,
+        out bool usedTextIcon
     )
     {
+        usedTextIcon = false;
         //name = SeStringUtils.SeStringToPtr(SeStringUtils.Text("Plugin Enjoyer"));
-        var uid = npObject.NamePlateInfo.Data.ObjectID.ObjectID;
+        var uid = npObject.NamePlateInfo.ObjectID;
         var mode = GetModeForNameplate(npObject);
 
         if (_configuration.HideLocalPlayerNameplate && uid == Service.ClientState.LocalPlayer?.ObjectId)
@@ -215,88 +219,105 @@ public sealed class NameplateView : IDisposable
         var hasRole = _roleTracker.TryGetAssignedRole(playerCharacter.Name.TextValue, playerCharacter.HomeWorld.Id,
             out var roleId);
 
-        switch (mode)
-        {
+        switch (mode) {
             case NameplateMode.Default:
             case NameplateMode.Hide:
                 break;
-
             case NameplateMode.SmallJobIcon:
-                var nameString = GetStateNametext(iconID, "");
-                var originalName = SeStringUtils.SeStringFromPtr(name);
-                nameString.Append(originalName);
-
-                name = SeStringUtils.SeStringToPtr(nameString);
-                iconID = GetClassIcon(npObject.NamePlateInfo);
-
-                break;
-
-            case NameplateMode.SmallJobIconAndRole:
-                nameString = new SeString();
-
-                if (hasRole)
-                {
-                    nameString.Append(_stylesheet.GetRolePlate(roleId));
-                    nameString.Append(" ");
+            {
+                var icon = StatusUtils.OnlineStatusToBitmapIcon(npObject.NamePlateInfo.GetOnlineStatus());
+                if (icon is not BitmapFontIcon.None) {
+                    var nameString = new SeString()
+                        .Append(new IconPayload(icon))
+                        .Append(SeStringUtils.SeStringFromPtr(name));
+                    name = SeStringUtils.SeStringToPtr(nameString);
+                    usedTextIcon = true;
                 }
 
-                originalName = SeStringUtils.SeStringFromPtr(name);
-                nameString.Append(originalName);
-
-                name = SeStringUtils.SeStringToPtr(nameString);
                 iconID = GetClassIcon(npObject.NamePlateInfo);
-
                 break;
+            }
+            case NameplateMode.SmallJobIconAndRole:
+            {
+                if (hasRole) {
+                    var nameString = new SeString()
+                        .Append(_stylesheet.GetRolePlate(roleId))
+                        .Append(" ")
+                        .Append(SeStringUtils.SeStringFromPtr(name));
+                    name = SeStringUtils.SeStringToPtr(nameString);
+                    usedTextIcon = true;
+                }
+                else {
+                    var icon = StatusUtils.OnlineStatusToBitmapIcon(npObject.NamePlateInfo.GetOnlineStatus());
+                    if (icon is not BitmapFontIcon.None) {
+                        var nameString = new SeString()
+                            .Append(new IconPayload(icon))
+                            .Append(SeStringUtils.SeStringFromPtr(name));
+                        name = SeStringUtils.SeStringToPtr(nameString);
+                        usedTextIcon = true;
+                    }
+                }
 
+                iconID = GetClassIcon(npObject.NamePlateInfo);
+                break;
+            }
             case NameplateMode.BigJobIcon:
-                name = SeStringUtils.SeStringToPtr(GetStateNametext(iconID, "   "));
+            {
+                var icon = StatusUtils.OnlineStatusToBitmapIcon(npObject.NamePlateInfo.GetOnlineStatus());
+                if (icon is not BitmapFontIcon.None) {
+                    var nameString = new SeString()
+                        .Append("  ")
+                        .Append(new IconPayload(icon));
+                    name = SeStringUtils.SeStringToPtr(nameString);
+                    usedTextIcon = true;
+                }
+                else {
+                    name = SeStringUtils.emptyPtr;
+                }
                 fcName = SeStringUtils.emptyPtr;
                 displayTitle = false;
                 iconID = GetClassIcon(npObject.NamePlateInfo);
-
                 break;
-
+            }
             case NameplateMode.BigJobIconAndPartySlot:
+            {
                 fcName = SeStringUtils.emptyPtr;
                 displayTitle = false;
-                var partySlot = _partyListHudView.GetPartySlotIndex(npObject.NamePlateInfo.Data.ObjectID.ObjectID) +
+                var partySlot = _partyListHudView.GetPartySlotIndex(npObject.NamePlateInfo.ObjectID) +
                                 1;
 
-                if (partySlot != null)
-                {
-                    var genericRole = JobExtensions.GetRole((Job) npObject.NamePlateInfo.GetJobID());
+                if (partySlot != null) {
+                    var genericRole = ((Job)npObject.NamePlateInfo.GetJobID()).GetRole();
                     var str = _stylesheet.GetPartySlotNumber(partySlot.Value, genericRole);
                     str.Payloads.Insert(0, new TextPayload("   "));
                     name = SeStringUtils.SeStringToPtr(str);
                     iconID = GetClassIcon(npObject.NamePlateInfo);
                 }
-                else
-                {
+                else {
                     name = SeStringUtils.emptyPtr;
                     iconID = GetClassIcon(npObject.NamePlateInfo);
                 }
 
                 break;
-
+            }
             case NameplateMode.RoleLetters:
-                if (hasRole)
-                {
+            {
+                if (hasRole) {
                     name = SeStringUtils.SeStringToPtr(_stylesheet.GetRolePlate(roleId));
                 }
-                else
-                {
-                    var genericRole = JobExtensions.GetRole((Job) npObject.NamePlateInfo.GetJobID());
+                else {
+                    var genericRole = ((Job)npObject.NamePlateInfo.GetJobID()).GetRole();
                     name = SeStringUtils.SeStringToPtr(_stylesheet.GetGenericRolePlate(genericRole));
                 }
 
                 fcName = SeStringUtils.emptyPtr;
                 displayTitle = false;
-
                 break;
+            }
         }
     }
 
-    private int GetClassIcon(XivApi.SafeNamePlateInfo info)
+    private uint GetClassIcon(NamePlateInfoWrapper info)
     {
         var genericRole = JobExtensions.GetRole((Job) info.GetJobID());
         var iconSet = _stylesheet.GetGenericRoleIconset(genericRole);
@@ -304,46 +325,16 @@ public sealed class NameplateView : IDisposable
         return _iconSet.GetJobIcon(iconSet, info.GetJobID());
     }
 
-    private SeString GetStateNametext(int iconId, string prefix)
+    private NameplateMode GetModeForNameplate(NamePlateObjectWrapper npObject)
     {
-        switch (iconId)
-        {
-            case 061523:
-                return SeStringUtils.Icon(BitmapFontIcon.NewAdventurer, prefix);
-            
-            case 061540:
-                return SeStringUtils.Icon(BitmapFontIcon.Mentor, prefix);
-            
-            case 061542:
-                return SeStringUtils.Icon(BitmapFontIcon.MentorPvE, prefix);
-            
-            case 061543:
-                return SeStringUtils.Icon(BitmapFontIcon.MentorCrafting, prefix);
-            
-            case 061544:
-                return SeStringUtils.Icon(BitmapFontIcon.MentorPvP, prefix);
-            
-            case 061547:
-                return SeStringUtils.Icon(BitmapFontIcon.Returner, prefix);
-            
-            default:
-                return SeStringUtils.Text(prefix + " ");
-        }
-    }
-
-    private NameplateMode GetModeForNameplate(XivApi.SafeNamePlateObject npObject)
-    {
-        var uid = npObject.NamePlateInfo.Data.ObjectID.ObjectID;
-        var mode = OthersMode;
+        var uid = npObject.NamePlateInfo.ObjectID;
 
         if (_configuration.TestingMode || npObject.NamePlateInfo.IsPartyMember() ||
             uid == Service.ClientState.LocalPlayer?.ObjectId)
         {
             return PartyMode;
         }
-        else
-        {
-            return OthersMode;
-        }
+
+        return OthersMode;
     }
 }
