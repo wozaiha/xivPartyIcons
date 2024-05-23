@@ -1,5 +1,4 @@
 ﻿using Dalamud.Plugin;
-using PartyIcons.Api;
 using PartyIcons.Configuration;
 using PartyIcons.Runtime;
 using PartyIcons.Stylesheet;
@@ -15,7 +14,6 @@ public sealed class Plugin : IDalamudPlugin
     public static PartyListHUDUpdater PartyListHudUpdater { get; private set; } = null!;
     public static SettingsWindow SettingsWindow { get; private set; } = null!;
     public static NameplateUpdater NameplateUpdater { get; private set; } = null!;
-    public static NPCNameplateFixer NpcNameplateFixer { get; private set; } = null!;
     public static NameplateView NameplateView { get; private set; } = null!;
     public static RoleTracker RoleTracker { get; private set; } = null!;
     public static ViewModeSetter ModeSetter { get; private set; } = null!;
@@ -24,6 +22,7 @@ public sealed class Plugin : IDalamudPlugin
     public static CommandHandler CommandHandler { get; private set; } = null!;
     public static Settings Settings { get; private set; } = null!;
     public static PlayerStylesheet PlayerStylesheet { get; private set; } = null!;
+    public static StatusResolver StatusResolver { get; private set; } = null!;
 
     public Plugin(DalamudPluginInterface pluginInterface)
     {
@@ -35,18 +34,16 @@ public sealed class Plugin : IDalamudPlugin
 
         SettingsWindow = new SettingsWindow();
 
-        ModuleCache.Initialize();
-
         SeStringUtils.Initialize();
 
-        PartyHudView = new PartyListHUDView(Service.GameGui, PlayerStylesheet);
+        PartyHudView = new PartyListHUDView(PlayerStylesheet);
         RoleTracker = new RoleTracker(Settings);
-        NameplateView = new NameplateView(RoleTracker, Settings, PlayerStylesheet, PartyHudView);
+        StatusResolver = new StatusResolver(Settings);
+        NameplateView = new NameplateView(RoleTracker, Settings, PlayerStylesheet, StatusResolver);
         ChatNameUpdater = new ChatNameUpdater(RoleTracker, PlayerStylesheet);
         PartyListHudUpdater = new PartyListHUDUpdater(PartyHudView, RoleTracker, Settings);
-        ModeSetter = new ViewModeSetter(NameplateView, Settings, ChatNameUpdater, PartyListHudUpdater);
-        NameplateUpdater = new NameplateUpdater(Settings, NameplateView, ModeSetter);
-        NpcNameplateFixer = new NPCNameplateFixer(NameplateView);
+        ModeSetter = new ViewModeSetter(NameplateView, Settings, ChatNameUpdater, PartyListHudUpdater, StatusResolver);
+        NameplateUpdater = new NameplateUpdater(NameplateView);
         ContextMenu = new ContextMenu(RoleTracker, Settings, PlayerStylesheet);
         CommandHandler = new CommandHandler();
 
@@ -56,7 +53,6 @@ public sealed class Plugin : IDalamudPlugin
         ModeSetter.Enable();
         RoleTracker.Enable();
         NameplateUpdater.Enable();
-        NpcNameplateFixer.Enable();
         ChatNameUpdater.Enable();
     }
 
@@ -67,13 +63,11 @@ public sealed class Plugin : IDalamudPlugin
         ChatNameUpdater.Dispose();
         ContextMenu.Dispose();
         NameplateUpdater.Dispose();
-        NpcNameplateFixer.Dispose();
         RoleTracker.Dispose();
         ModeSetter.Dispose();
         SettingsWindow.Dispose();
         CommandHandler.Dispose();
 
         SeStringUtils.Dispose();
-        ModuleCache.Dispose();
     }
 }

@@ -4,11 +4,13 @@ using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using Dalamud.Game.ClientState.Conditions;
+using Dalamud.Game.ClientState.Objects.SubKinds;
 using Dalamud.Game.ClientState.Party;
 using Dalamud.Game.Gui.Toast;
 using Dalamud.Game.Text;
 using Dalamud.Game.Text.SeStringHandling;
 using Dalamud.Game.Text.SeStringHandling.Payloads;
+using Dalamud.Memory;
 using Dalamud.Plugin.Services;
 using PartyIcons.Configuration;
 using PartyIcons.Entities;
@@ -82,6 +84,15 @@ public sealed class RoleTracker : IDisposable
     public bool TryGetAssignedRole(string name, uint worldId, out RoleId roleId)
     {
         // Service.Log.Verbose($"{_assignedRoles.Count}");
+        return _assignedRoles.TryGetValue(PlayerId(name, worldId), out roleId);
+    }
+
+    public unsafe bool TryGetAssignedRole(PlayerCharacter pc, out RoleId roleId)
+    {
+        // Cheating a lot for small efficiency gains (avoid SeString creation and ExcelResolver allocation)
+        var name = MemoryHelper.ReadStringNullTerminated((IntPtr)((FFXIVClientStructs.FFXIV.Client.Game.Object.GameObject*)pc.Address)->Name);
+        var worldId = ((FFXIVClientStructs.FFXIV.Client.Game.Character.Character*)pc.Address)->HomeWorld;
+
         return _assignedRoles.TryGetValue(PlayerId(name, worldId), out roleId);
     }
 
@@ -219,6 +230,13 @@ public sealed class RoleTracker : IDisposable
         foreach (var kv in _occupiedRoles)
         {
             sb.Append($"Role {kv.Value} occupied by {kv.Key}\n");
+        }
+
+        sb.Append("\nSuggested roles:\n");
+
+        foreach (var kv in _suggestedRoles)
+        {
+            sb.Append($"Role {kv.Value} suggested by {kv.Key}\n");
         }
 
         sb.Append("\nUnassigned roles:\n");

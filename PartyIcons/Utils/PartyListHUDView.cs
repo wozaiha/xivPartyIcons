@@ -1,6 +1,4 @@
 ﻿using System;
-using System.Text;
-using Dalamud.Plugin.Services;
 using FFXIVClientStructs.FFXIV.Client.UI;
 using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 using PartyIcons.Entities;
@@ -8,53 +6,22 @@ using PartyIcons.Stylesheet;
 
 namespace PartyIcons.Utils;
 
-public unsafe class PartyListHUDView : IDisposable
+public sealed unsafe class PartyListHUDView : IDisposable
 {
-    // [PluginService]
-    // public PartyList PartyList { get; set; }
-
     private readonly PlayerStylesheet _stylesheet;
-    private readonly IGameGui _gameGui;
 
-    public PartyListHUDView(IGameGui gameGui, PlayerStylesheet stylesheet)
+    public PartyListHUDView(PlayerStylesheet stylesheet)
     {
-        _gameGui = gameGui;
         _stylesheet = stylesheet;
     }
 
     public void Dispose()
     {
-        RevertSlotNumbers();
     }
 
-    public void RevertSlotNumbers()
+    public static uint? GetPartySlotIndex(uint objectId)
     {
-        for (uint i = 0; i < 8; i++)
-        {
-            var memberStructOptional = GetPartyMemberStruct(i);
-
-            if (!memberStructOptional.HasValue)
-            {
-                Service.Log.Warning($"Failed to dispose member HUD changes - struct null!");
-
-                continue;
-            }
-
-            var memberStruct = memberStructOptional.Value;
-            var nameNode = memberStruct.Name;
-            nameNode->AtkResNode.SetPositionShort(19, 0);
-
-            var numberNode = nameNode->AtkResNode.PrevSiblingNode->GetAsAtkTextNode();
-            numberNode->AtkResNode.SetPositionShort(0, 0);
-            numberNode->SetText(_stylesheet.BoxedCharacterString((i + 1).ToString()));
-        }
-    }
-
-    public uint? GetPartySlotIndex(uint objectId)
-    {
-        var hud =
-            FFXIVClientStructs.FFXIV.Client.System.Framework.Framework.Instance()->GetUiModule()->GetAgentModule()->
-                GetAgentHUD();
+        var hud = AgentHUD.Instance();
 
         if (hud == null)
         {
@@ -85,49 +52,9 @@ public unsafe class PartyListHUDView : IDisposable
         return null;
     }
 
-    public void SetPartyMemberRole(string name, uint objectId, RoleId roleId)
+    public void SetPartyMemberRoleByIndex(AddonPartyList* addonPartyList, int index, RoleId roleId)
     {
-        var index = GetPartySlotIndex(objectId);
-
-        for (uint i = 0; i < 8; i++)
-        {
-            var memberStruct = GetPartyMemberStruct(i);
-
-            if (memberStruct.HasValue)
-            {
-                var nameString = memberStruct.Value.Name->NodeText.ToString();
-                var strippedName = StripSpecialCharactersFromName(nameString);
-
-                if (name.Contains(strippedName))
-                {
-                    if (!index.HasValue || index.Value != i)
-                    {
-                        Service.Log.Warning("PartyHUD and HUDAgent id's mismatch!");
-                        // Service.Log.Warning(GetDebugInfo());
-                    }
-
-                    SetPartyMemberRole(i, roleId);
-
-                    return;
-                }
-            }
-        }
-
-        Service.Log.Verbose($"Member struct by the name {name} not found.");
-    }
-
-    public void SetPartyMemberRole(uint index, RoleId roleId)
-    {
-        var memberStructOptional = GetPartyMemberStruct(index);
-
-        if (!memberStructOptional.HasValue)
-        {
-            Service.Log.Warning($"Failed to set party member HUD role to {roleId} - struct null!");
-
-            return;
-        }
-
-        var memberStruct = memberStructOptional.Value;
+        var memberStruct = addonPartyList->PartyMember[index];
 
         var nameNode = memberStruct.Name;
         nameNode->AtkResNode.SetPositionShort(29, 0);
@@ -144,113 +71,15 @@ public unsafe class PartyListHUDView : IDisposable
         }
     }
 
-    public string GetDebugInfo()
+    public void RevertPartyMemberRoleByIndex(AddonPartyList* addonPartyList, int index)
     {
-        var hud =
-            FFXIVClientStructs.FFXIV.Client.System.Framework.Framework.Instance()->GetUiModule()->GetAgentModule()->
-                GetAgentHUD();
+        var memberStruct = addonPartyList->PartyMember[index];
 
-        if (hud == null)
-        {
-            Service.Log.Warning("AgentHUD null!");
+        var nameNode = memberStruct.Name;
+        nameNode->AtkResNode.SetPositionShort(19, 0);
 
-            return null;
-        }
-
-        if (hud->PartyMemberCount > 9)
-        {
-            // hud->PartyMemberCount gives out special (?) value when in trust
-            Service.Log.Verbose("GetPartySlotIndex - trust detected, returning null");
-
-            return null;
-        }
-
-        var result = new StringBuilder();
-        result.AppendLine($"PARTY ({Service.PartyList.Length}):");
-
-        foreach (var member in Service.PartyList)
-        {
-            var index = GetPartySlotIndex(member.ObjectId);
-            result.AppendLine(
-                $"PartyList name {member.Name} oid {member.ObjectId} worldid {member.World.Id} slot index {index}");
-        }
-
-        result.AppendLine("STRUCTS:");
-        var memberList = (HudPartyMember*) hud->PartyMemberList;
-
-        for (var i = 0; i < Math.Min(hud->PartyMemberCount, 8u); i++)
-        {
-            var memberStruct = GetPartyMemberStruct((uint) i);
-
-            if (memberStruct.HasValue)
-            {
-                /*
-                for (var pi = 0; pi < memberStruct.Value.ClassJobIcon->PartsList->PartCount; pi++)
-                {
-                    var part = memberStruct.Value.ClassJobIcon->PartsList->Parts[pi];
-                    result.Append($"icon {part.UldAsset->AtkTexture.Resource->TexFileResourceHandle->ResourceHandle.FileName}");
-                }
-                */
-
-                var strippedName = StripSpecialCharactersFromName(memberStruct.Value.Name->NodeText.ToString());
-                result.AppendLine(
-                    $"PartyMemberStruct index {i} name '{strippedName}', id matched {memberList[i].ObjectId}");
-
-                var byteCount = 0;
-
-                while (byteCount < 16 && memberList[i].Name[byteCount++] != 0) { }
-
-                var memberListName = Encoding.UTF8.GetString(memberList[i].Name, byteCount - 1);
-                result.AppendLine($"HudPartyMember index {i} name {memberListName} {memberList[i].ObjectId}");
-            }
-            else
-            {
-                result.AppendLine($"PartyMemberStruct null at {i}");
-            }
-        }
-
-        return result.ToString();
-    }
-
-    private AddonPartyList.PartyListMemberStruct? GetPartyMemberStruct(uint idx)
-    {
-        var partyListAddon = (AddonPartyList*) _gameGui.GetAddonByName("_PartyList", 1);
-
-        if (partyListAddon == null)
-        {
-            Service.Log.Warning("PartyListAddon null!");
-
-            return null;
-        }
-
-        return idx switch
-        {
-            0 => partyListAddon->PartyMember.PartyMember0,
-            1 => partyListAddon->PartyMember.PartyMember1,
-            2 => partyListAddon->PartyMember.PartyMember2,
-            3 => partyListAddon->PartyMember.PartyMember3,
-            4 => partyListAddon->PartyMember.PartyMember4,
-            5 => partyListAddon->PartyMember.PartyMember5,
-            6 => partyListAddon->PartyMember.PartyMember6,
-            7 => partyListAddon->PartyMember.PartyMember7,
-            _ => throw new ArgumentException($"Invalid index: {idx}")
-        };
-    }
-
-    private string StripSpecialCharactersFromName(string name)
-    {
-        var result = new StringBuilder();
-
-        for (var i = 0; i < name.Length; i++)
-        {
-            var ch = name[i];
-
-            if (ch >= 65 && ch <= 90 || ch >= 97 && ch <= 122 || ch == 45 || ch == 32 || ch == 39)
-            {
-                result.Append(name[i]);
-            }
-        }
-
-        return result.ToString().Trim();
+        var numberNode = nameNode->AtkResNode.PrevSiblingNode->GetAsAtkTextNode();
+        numberNode->AtkResNode.SetPositionShort(0, 0);
+        numberNode->SetText(_stylesheet.BoxedCharacterString((index + 1).ToString()));
     }
 }

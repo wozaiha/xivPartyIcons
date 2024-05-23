@@ -34,15 +34,24 @@ public sealed class ContextMenu : IDisposable
 
     private CharacterInfo? GetCharacterInfo(MenuOpenedArgs args)
     {
-        if (args is { MenuType: ContextMenuType.Default, Target: MenuTargetDefault { TargetObject: PlayerCharacter pc } }) {
-            var name = pc.Name.TextValue;
-            var world = pc.HomeWorld.Id;
-            return new CharacterInfo(
-                name,
-                world,
-                _roleTracker.TryGetAssignedRole(name, world, out var assigned) ? assigned : null,
-                _roleTracker.TryGetSuggestedRole(name, world, out var suggested) ? suggested : null
-            );
+        if (args is { MenuType: ContextMenuType.Default, Target: MenuTargetDefault menuTarget }) {
+            if (menuTarget.TargetCharacter is { Name: {} tcName, HomeWorld.Id: var tcWorld }) {
+                return new CharacterInfo(
+                    tcName,
+                    tcWorld,
+                    _roleTracker.TryGetAssignedRole(tcName, tcWorld, out var assigned) ? assigned : null,
+                    _roleTracker.TryGetSuggestedRole(tcName, tcWorld, out var suggested) ? suggested : null
+                );
+            }
+
+            if (menuTarget.TargetObject is PlayerCharacter { Name.TextValue: {} pcName, HomeWorld.Id: var pcWorld }) {
+                return new CharacterInfo(
+                    pcName,
+                    pcWorld,
+                    _roleTracker.TryGetAssignedRole(pcName, pcWorld, out var assigned) ? assigned : null,
+                    _roleTracker.TryGetSuggestedRole(pcName, pcWorld, out var suggested) ? suggested : null
+                );
+            }
         }
 
         return null;

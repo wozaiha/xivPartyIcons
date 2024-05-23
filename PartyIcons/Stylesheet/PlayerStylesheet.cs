@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Text;
+using Dalamud.Game.Text;
 using Dalamud.Game.Text.SeStringHandling;
 using Dalamud.Game.Text.SeStringHandling.Payloads;
 using Lumina.Excel.GeneratedSheets;
@@ -13,17 +14,16 @@ namespace PartyIcons.Stylesheet;
 public sealed class PlayerStylesheet
 {
     private readonly Settings _configuration;
-    private ushort _fallbackColor = 1;
+    private const ushort FallbackColor = 2;
 
     public PlayerStylesheet(Settings configuration)
     {
         _configuration = configuration;
     }
 
-    public ushort GetGenericRoleColor(GenericRole role)
+    private ushort GetGenericRoleColor(GenericRole role)
     {
-        switch (role)
-        {
+        switch (role) {
             case GenericRole.Tank:
                 return 37;
 
@@ -37,14 +37,13 @@ public sealed class PlayerStylesheet
                 return 42;
 
             default:
-                return _fallbackColor;
+                return FallbackColor;
         }
     }
 
     public ushort GetRoleColor(RoleId roleId)
     {
-        switch (roleId)
-        {
+        switch (roleId) {
             case RoleId.MT:
             case RoleId.OT:
                 return GetGenericRoleColor(GenericRole.Tank);
@@ -62,65 +61,28 @@ public sealed class PlayerStylesheet
                 return GetGenericRoleColor(GenericRole.Healer);
 
             default:
-                return _fallbackColor;
+                return FallbackColor;
         }
     }
 
-    public string GetRoleIconset(RoleId roleId)
+    public IconGroupId GetGenericRoleIconGroupId(IconSetId iconSetId, GenericRole role)
     {
-        switch (_configuration.IconSetId)
+        return iconSetId switch
         {
-            case IconSetId.Framed:
-                return "Framed";
-
-            case IconSetId.GlowingGold:
-                return "Glowing";
-
-            case IconSetId.GlowingColored:
-                return roleId switch
-                {
-                    RoleId.MT => "Blue",
-                    RoleId.OT => "Blue",
-                    RoleId.M1 => "Red",
-                    RoleId.M2 => "Red",
-                    RoleId.R1 => "Orange",
-                    RoleId.R2 => "Orange",
-                    RoleId.H1 => "Green",
-                    RoleId.H2 => "Green",
-                    _ => "Grey"
-                };
-
-            default:
-                throw new ArgumentException($"Unknown icon set id: {_configuration.IconSetId}");
-        }
-    }
-
-    public string GetGenericRoleIconset(GenericRole role)
-    {
-        switch (_configuration.IconSetId)
-        {
-            case IconSetId.Framed:
-                return "Framed";
-
-            case IconSetId.GlowingGold:
-                return "Glowing";
-
-            case IconSetId.GlowingColored:
-                return role switch
-                {
-                    GenericRole.Tank => "Blue",
-                    GenericRole.Melee => "Red",
-                    GenericRole.Ranged => "Orange",
-                    GenericRole.Healer => "Green",
-                    _ => "Grey"
-                };
-
-            case IconSetId.PlainGold:
-                return "Gold";
-
-            default:
-                throw new ArgumentException($"Unknown icon set id: {_configuration.IconSetId}");
-        }
+            IconSetId.EmbossedFramed => IconGroupId.EmbossedFramed,
+            IconSetId.EmbossedFramedSmall => IconGroupId.EmbossedFramedSmall,
+            IconSetId.Glowing => IconGroupId.Glowing,
+            IconSetId.Gradient => role switch
+            {
+                GenericRole.Tank => IconGroupId.GradientBlue,
+                GenericRole.Melee => IconGroupId.GradientRed,
+                GenericRole.Ranged => IconGroupId.GradientOrange,
+                GenericRole.Healer => IconGroupId.GradientGreen,
+                _ => IconGroupId.GradientGrey
+            },
+            IconSetId.Embossed => IconGroupId.Embossed,
+            _ => throw new ArgumentException($"Unknown icon set id: {_configuration.IconSetId}")
+        };
     }
 
     public string GetRoleName(RoleId roleId)
@@ -141,10 +103,11 @@ public sealed class PlayerStylesheet
     {
         return GetGenericRolePlate(genericRole, true);
     }
+
     public SeString GetGenericRolePlate(GenericRole genericRole, bool colored)
     {
-        return colored ?
-            genericRole switch
+        return colored
+            ? genericRole switch
             {
                 GenericRole.Tank => SeStringUtils.Text(BoxedCharacterString("T"), GetGenericRoleColor(genericRole)),
                 GenericRole.Melee => SeStringUtils.Text(
@@ -153,11 +116,12 @@ public sealed class PlayerStylesheet
                 GenericRole.Ranged => SeStringUtils.Text(
                     BoxedCharacterString(_configuration.EasternNamingConvention ? "D" : "R"),
                     GetGenericRoleColor(genericRole)),
-                GenericRole.Healer => SeStringUtils.Text(BoxedCharacterString("H"),
-                    GetGenericRoleColor(genericRole)),
-                _ => ""
-            } :
-            genericRole switch
+                GenericRole.Healer => SeStringUtils.Text(BoxedCharacterString("H"), GetGenericRoleColor(genericRole)),
+                GenericRole.Crafter => SeStringUtils.Text(BoxedCharacterString("C"), GetGenericRoleColor(genericRole)),
+                GenericRole.Gatherer => SeStringUtils.Text(BoxedCharacterString("G"), GetGenericRoleColor(genericRole)),
+                _ => SeStringUtils.Text(SeIconChar.BoxedQuestionMark.ToIconString(), GetGenericRoleColor(genericRole))
+            }
+            : genericRole switch
             {
                 GenericRole.Tank => SeStringUtils.Text(BoxedCharacterString("T")),
                 GenericRole.Melee => SeStringUtils.Text(
@@ -165,20 +129,20 @@ public sealed class PlayerStylesheet
                 GenericRole.Ranged => SeStringUtils.Text(
                     BoxedCharacterString(_configuration.EasternNamingConvention ? "D" : "R")),
                 GenericRole.Healer => SeStringUtils.Text(BoxedCharacterString("H")),
-                _ => ""
+                GenericRole.Crafter => SeStringUtils.Text(BoxedCharacterString("C")),
+                GenericRole.Gatherer => SeStringUtils.Text(BoxedCharacterString("G")),
+                _ => SeIconChar.BoxedQuestionMark.ToIconString()
             };
     }
 
     public SeString GetRolePlate(RoleId roleId)
     {
-        switch (roleId)
-        {
+        switch (roleId) {
             case RoleId.MT:
                 return SeStringUtils.Text(BoxedCharacterString("MT"), GetRoleColor(roleId));
 
             case RoleId.OT:
-                return SeStringUtils.Text(
-                    BoxedCharacterString(_configuration.EasternNamingConvention ? "ST" : "OT"),
+                return SeStringUtils.Text(BoxedCharacterString(_configuration.EasternNamingConvention ? "ST" : "OT"),
                     GetRoleColor(roleId));
 
             case RoleId.M1:
@@ -205,8 +169,7 @@ public sealed class PlayerStylesheet
 
     public SeString GetRolePlateNumber(RoleId roleId)
     {
-        if (_configuration.EasternNamingConvention)
-        {
+        if (_configuration.EasternNamingConvention) {
             return roleId switch
             {
                 RoleId.MT => SeStringUtils.Text(BoxedCharacterString("1"), GetRoleColor(roleId)),
@@ -219,8 +182,7 @@ public sealed class PlayerStylesheet
                 RoleId.R2 => SeStringUtils.Text(BoxedCharacterString("4"), GetRoleColor(roleId))
             };
         }
-        else
-        {
+        else {
             return roleId switch
             {
                 RoleId.MT => SeStringUtils.Text(BoxedCharacterString("1"), GetRoleColor(roleId)),
@@ -243,43 +205,36 @@ public sealed class PlayerStylesheet
     public ushort GetRoleChatColor(RoleId roleId) => GetRoleColor(roleId);
 
     public SeString GetGenericRoleChatPrefix(ClassJob classJob, bool colored) =>
-        GetGenericRolePlate(JobExtensions.GetRole((Job) classJob.RowId), colored);
+        GetGenericRolePlate(((Job)classJob.RowId).GetRole(), colored);
 
     public ushort GetGenericRoleChatColor(ClassJob classJob) =>
-        GetGenericRoleColor(JobExtensions.GetRole((Job) classJob.RowId));
+        GetGenericRoleColor(((Job)classJob.RowId).GetRole());
 
-
-    public SeString GetJobChatPrefix(ClassJob classJob)
-    {
-        return GetJobChatPrefix(classJob, true);
-    }
     public SeString GetJobChatPrefix(ClassJob classJob, bool colored)
     {
-        if (true)
-        {
-            return colored ? 
-                new SeString(
+        if (true) {
+            return colored
+                ? new SeString(
                     new UIGlowPayload(GetGenericRoleChatColor(classJob)),
                     new UIForegroundPayload(GetGenericRoleChatColor(classJob)),
                     new TextPayload(classJob.Abbreviation),
                     UIForegroundPayload.UIForegroundOff,
                     UIGlowPayload.UIGlowOff
-                ) :
-                new SeString(
+                )
+                : new SeString(
                     new TextPayload(classJob.Abbreviation)
                 );
         }
     }
 
     public ushort GetJobChatColor(ClassJob classJob) =>
-        GetGenericRoleColor(JobExtensions.GetRole((Job) classJob.RowId));
+        GetGenericRoleColor(JobExtensions.GetRole((Job)classJob.RowId));
 
     public string BoxedCharacterString(string str)
     {
         var builder = new StringBuilder(str.Length);
 
-        foreach (var ch in str)
-        {
+        foreach (var ch in str) {
             builder.Append(BoxedCharacter(ch));
         }
 

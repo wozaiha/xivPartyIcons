@@ -1,8 +1,10 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using Lumina.Excel;
 using Lumina.Excel.GeneratedSheets;
 using PartyIcons.Configuration;
+using PartyIcons.Utils;
 using PartyIcons.View;
 
 namespace PartyIcons.Runtime;
@@ -13,7 +15,7 @@ public enum ZoneType
     Dungeon,
     Raid,
     AllianceRaid,
-    Foray,
+    FieldOperation,
 }
 
 public sealed class ViewModeSetter
@@ -29,16 +31,20 @@ public sealed class ViewModeSetter
     private readonly Settings _configuration;
     private readonly ChatNameUpdater _chatNameUpdater;
     private readonly PartyListHUDUpdater _partyListHudUpdater;
+    private readonly StatusResolver _statusResolver;
+
+    private static readonly StatusSelector DefaultStatusSelector = new(ZoneType.Overworld);
 
     private ExcelSheet<ContentFinderCondition> _contentFinderConditionsSheet;
 
     public ViewModeSetter(NameplateView nameplateView, Settings configuration, ChatNameUpdater chatNameUpdater,
-        PartyListHUDUpdater partyListHudUpdater)
+        PartyListHUDUpdater partyListHudUpdater, StatusResolver statusResolver)
     {
         _nameplateView = nameplateView;
         _configuration = configuration;
         _chatNameUpdater = chatNameUpdater;
         _partyListHudUpdater = partyListHudUpdater;
+        _statusResolver = statusResolver;
         
         _configuration.OnSave += OnConfigurationSave;
     }
@@ -75,6 +81,101 @@ public sealed class ViewModeSetter
         Disable();
     }
 
+    // public DisplayConfig GetDisplayConfig(DisplaySelector selector)
+    // {
+    //     var configs = _configuration.DisplayConfigs;
+    //     switch (selector.Preset) {
+    //         case DisplayPreset.Default:
+    //             return configs.Default;
+    //         case DisplayPreset.Hide:
+    //             return configs.Hide;
+    //         case DisplayPreset.SmallJobIcon:
+    //             return configs.SmallJobIcon;
+    //         case DisplayPreset.SmallJobIconAndRole:
+    //             return configs.SmallJobIconAndRole;
+    //         case DisplayPreset.BigJobIcon:
+    //             return configs.BigJobIcon;
+    //         case DisplayPreset.BigJobIconAndPartySlot:
+    //             return configs.BigJobIconAndPartySlot;
+    //         case DisplayPreset.RoleLetters:
+    //             return configs.RoleLetters;
+    //         case DisplayPreset.Custom:
+    //             foreach (var config in configs.Custom.Where(config => config.Id == selector.Id)) {
+    //                 return config;
+    //             }
+    //
+    //             Service.Log.Warning($"Couldn't find custom preset with id {selector.Id}, falling back to default");
+    //             return configs.Default;
+    //         default:
+    //             Service.Log.Warning($"Couldn't find preset of type {selector.Preset}, falling back to default");
+    //             return configs.Default;
+    //     }
+    // }
+    //
+    // public StatusConfig GetStatusConfig(StatusSelector selector)
+    // {
+    //     var configs = _configuration.StatusConfigs;
+    //     switch (selector.Preset) {
+    //         case StatusPreset.Overworld:
+    //             return configs.Overworld;
+    //         case StatusPreset.Instances:
+    //             return configs.Instances;
+    //         case StatusPreset.FieldOperations:
+    //             return configs.FieldOperations;
+    //         case StatusPreset.Custom:
+    //             foreach (var config in configs.Custom.Where(config => config.Id == selector.Id)) {
+    //                 return config;
+    //             }
+    //
+    //             Service.Log.Warning($"Couldn't find custom preset with id {selector.Id}, falling back to overworld");
+    //             return configs.Overworld;
+    //         default:
+    //             Service.Log.Warning($"Couldn't find preset of type {selector.Preset}, falling back to overworld");
+    //             return configs.Overworld;
+    //     }
+    // }
+
+    private void SetNameplateViewZone(ZoneType zoneType)
+    {
+        var selectors = _configuration.DisplaySelectors;
+
+        var partyDisplay = _configuration.GetDisplayConfig(zoneType switch
+        {
+            ZoneType.Overworld => selectors.DisplayOverworld,
+            ZoneType.Dungeon => selectors.DisplayDungeon,
+            ZoneType.Raid => selectors.DisplayRaid,
+            ZoneType.AllianceRaid => selectors.DisplayAllianceRaid,
+            ZoneType.FieldOperation => selectors.DisplayFieldOperationParty,
+            _ => throw new ArgumentOutOfRangeException($"Unknown zone type {zoneType}")
+        });
+
+        var othersDisplay = _configuration.GetDisplayConfig(zoneType switch
+        {
+            ZoneType.Overworld => selectors.DisplayOthers,
+            ZoneType.Dungeon => selectors.DisplayOthers,
+            ZoneType.Raid => selectors.DisplayOthers,
+            ZoneType.AllianceRaid => selectors.DisplayOthers,
+            ZoneType.FieldOperation => selectors.DisplayFieldOperationOthers,
+            _ => throw new ArgumentOutOfRangeException($"Unknown zone type {zoneType}")
+        });
+
+        _nameplateView.ZoneType = zoneType;
+
+        _nameplateView.PartyDisplay = partyDisplay;
+        if (!partyDisplay.StatusSelectors.TryGetValue(zoneType, out var partyStatusSelector)) {
+            Service.Log.Warning($"Couldn't find status selector for zoneType {zoneType} in config {partyDisplay.Preset}/{partyDisplay.Id}");
+            partyStatusSelector = DefaultStatusSelector;
+        }
+        _nameplateView.PartyStatus = StatusUtils.DictToArray(_configuration.GetStatusConfig(partyStatusSelector).DisplayMap);
+
+        _nameplateView.OthersDisplay = othersDisplay;
+        if (!othersDisplay.StatusSelectors.TryGetValue(zoneType, out var othersStatusSelector)) {
+            Service.Log.Warning($"Couldn't find status selector for zoneType {zoneType} in config {othersDisplay.Preset}/{othersDisplay.Id}");
+            othersStatusSelector = DefaultStatusSelector;
+        }
+        _nameplateView.OthersStatus = StatusUtils.DictToArray(_configuration.GetStatusConfig(othersStatusSelector).DisplayMap);
+    }
+
     private void OnTerritoryChanged(ushort e)
     {
         var content =
@@ -83,9 +184,12 @@ public sealed class ViewModeSetter
         if (content == null)
         {
             Service.Log.Verbose($"Content null {Service.ClientState.TerritoryType}");
-            _nameplateView.PartyMode = _configuration.NameplateOverworld;
-            _chatNameUpdater.PartyMode = _configuration.ChatOverworld;
             ZoneType = ZoneType.Overworld;
+            _nameplateView.PartyMode = _configuration.NameplateOverworld;
+            _nameplateView.OthersMode = _configuration.NameplateOthers;
+            _chatNameUpdater.PartyMode = _configuration.ChatOverworld;
+            _statusResolver.SetZoneType(ZoneType.Overworld);
+            SetNameplateViewZone(ZoneType);
         }
         else
         {
@@ -96,20 +200,14 @@ public sealed class ViewModeSetter
 
             var memberType = content.ContentMemberType.Row;
 
-            if (content.RowId == 16 || content.RowId == 15)
+            if (content.TerritoryType.Value is { TerritoryIntendedUse: 41 or 48 } )
             {
-                // Praetorium and Castrum Meridianum
-                memberType = 2;
-            }
-
-            if (content.RowId == 735 || content.RowId == 778)
-            {
-                // Bozja
+                // Bozja/Eureka
                 memberType = 127;
             }
 
-            Service.Log.Verbose(
-                $"Territory changed {content.Name} (id {content.RowId} type {content.ContentType.Row}, terr {Service.ClientState.TerritoryType}, memtype {content.ContentMemberType.Row}, overriden {memberType})");
+            Service.Log.Debug(
+                $"Territory changed {content.Name} (id {content.RowId} type {content.ContentType.Row}, terr {Service.ClientState.TerritoryType}, iu {content.TerritoryType.Value?.TerritoryIntendedUse}, memtype {content.ContentMemberType.Row}, overriden {memberType})");
 
             switch (memberType)
             {
@@ -118,6 +216,8 @@ public sealed class ViewModeSetter
                     _nameplateView.PartyMode = _configuration.NameplateDungeon;
                     _nameplateView.OthersMode = _configuration.NameplateOthers;
                     _chatNameUpdater.PartyMode = _configuration.ChatDungeon;
+                    _statusResolver.SetZoneType(ZoneType.Dungeon);
+                    SetNameplateViewZone(ZoneType);
 
                     break;
 
@@ -126,6 +226,8 @@ public sealed class ViewModeSetter
                     _nameplateView.PartyMode = _configuration.NameplateRaid;
                     _nameplateView.OthersMode = _configuration.NameplateOthers;
                     _chatNameUpdater.PartyMode = _configuration.ChatRaid;
+                    _statusResolver.SetZoneType(ZoneType.Raid);
+                    SetNameplateViewZone(ZoneType);
 
                     break;
 
@@ -134,14 +236,18 @@ public sealed class ViewModeSetter
                     _nameplateView.PartyMode = _configuration.NameplateAllianceRaid;
                     _nameplateView.OthersMode = _configuration.NameplateOthers;
                     _chatNameUpdater.PartyMode = _configuration.ChatAllianceRaid;
+                    _statusResolver.SetZoneType(ZoneType.AllianceRaid);
+                    SetNameplateViewZone(ZoneType);
 
                     break;
 
                 case 127:
-                    ZoneType = ZoneType.Foray;
+                    ZoneType = ZoneType.FieldOperation;
                     _nameplateView.PartyMode = _configuration.NameplateBozjaParty;
                     _nameplateView.OthersMode = _configuration.NameplateBozjaOthers;
                     _chatNameUpdater.PartyMode = _configuration.ChatOverworld;
+                    _statusResolver.SetZoneType(ZoneType.FieldOperation);
+                    SetNameplateViewZone(ZoneType);
 
                     break;
 
@@ -150,15 +256,19 @@ public sealed class ViewModeSetter
                     _nameplateView.PartyMode = _configuration.NameplateDungeon;
                     _nameplateView.OthersMode = _configuration.NameplateOthers;
                     _chatNameUpdater.PartyMode = _configuration.ChatDungeon;
+                    _statusResolver.SetZoneType(ZoneType.Dungeon);
+                    SetNameplateViewZone(ZoneType);
 
                     break;
             }
         }
 
-        _partyListHudUpdater.UpdateHUD = _nameplateView.PartyMode == NameplateMode.RoleLetters ||
-                                         _nameplateView.PartyMode == NameplateMode.SmallJobIconAndRole;
+        var enableHud = _nameplateView.PartyMode is NameplateMode.RoleLetters or NameplateMode.SmallJobIconAndRole;
+        _partyListHudUpdater.EnableUpdates(enableHud);
 
-        Service.Log.Verbose($"Setting modes: nameplates party {_nameplateView.PartyMode} others {_nameplateView.OthersMode}, chat {_chatNameUpdater.PartyMode}, update HUD {_partyListHudUpdater.UpdateHUD}");
+        Service.Log.Verbose($"Setting modes: nameplates party {_nameplateView.PartyMode} others {_nameplateView.OthersMode}, chat {_chatNameUpdater.PartyMode}, update HUD {enableHud}");
         Service.Log.Debug($"Entered ZoneType {ZoneType.ToString()}");
+
+        Service.Framework.RunOnFrameworkThread(NameplateUpdater.ForceRedrawNamePlates);
     }
 }
