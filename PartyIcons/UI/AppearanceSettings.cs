@@ -100,20 +100,11 @@ public sealed class AppearanceSettings
 
         ImGui.TextDisabled("Appearance");
 
-        var iconSetIds = Enum.GetValues<IconSetId>().ToList();
-        iconSetIds.Remove(IconSetId.Inherit);
-        iconSetIds.Insert(0, IconSetId.Inherit);
-
-        using (var combo = ImRaii.Combo("Icon set", UiNames.GetName(config.IconSetId))) {
-            if (combo) {
-                foreach (var iconSetId in iconSetIds) {
-                    if (ImGui.Selectable(UiNames.GetName(iconSetId), iconSetId == config.IconSetId)) {
-                        config.IconSetId = iconSetId;
-                        Plugin.Settings.Save();
-                    }
-                }
-            }
-        }
+        ImGuiExt.DrawIconSetCombo("Icon set", true, () => config.IconSetId, iconSetId =>
+        {
+            config.IconSetId = iconSetId;
+            Plugin.Settings.Save();
+        });
 
         var scale = config.Scale;
         if (ImGui.SliderFloat("Scale", ref scale, 0.3f, 3f)) {

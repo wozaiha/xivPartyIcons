@@ -114,7 +114,7 @@ public sealed class NameplateView : IDisposable
         }
 
         var genericRole = context.Job.GetRole();
-        var iconSet = _stylesheet.GetGenericRoleIconGroupId(iconSetId, genericRole);
+        var iconSet = PlayerStylesheet.GetGenericRoleIconGroupId(iconSetId, genericRole);
         var iconGroup = IconRegistrar.Get(iconSet);
 
         context.JobIconGroup = iconGroup;

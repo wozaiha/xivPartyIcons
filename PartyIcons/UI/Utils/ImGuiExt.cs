@@ -1,10 +1,18 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Numerics;
+using Dalamud.Interface.Internal;
 using Dalamud.Interface.Utility;
+using Dalamud.Interface.Utility.Raii;
+using Dalamud.Plugin.Services;
 using ImGuiNET;
+using PartyIcons.Configuration;
+using PartyIcons.Entities;
+using PartyIcons.Stylesheet;
+using PartyIcons.View;
 
-namespace PartyIcons.Utils;
+namespace PartyIcons.UI.Utils;
 
 public static class ImGuiExt
 {
@@ -57,5 +65,54 @@ public static class ImGuiExt
         }
 
         ImGui.SetNextItemWidth(maxItemWidth * paddingMultiplier);
+    }
+
+    public static IDalamudTextureWrap? GetIconTexture(uint iconId)
+    {
+        var path = Service.TextureProvider.GetIconPath(iconId, ITextureProvider.IconFlags.None);
+        if (path == null)
+            return null;
+
+        return Service.TextureProvider.GetTextureFromGame(path);
+    }
+
+    public static void DrawIconSetCombo(string label, bool showInherit, Func<IconSetId> getter, Action<IconSetId> setter)
+    {
+        var currentIconSetId = getter();
+        var iconSetIds = Enum.GetValues<IconSetId>().Where(id => id != IconSetId.Inherit).ToList();
+        if (showInherit) {
+            iconSetIds.Insert(0, IconSetId.Inherit);
+        }
+
+        using (var combo = ImRaii.Combo(label, UiNames.GetName(currentIconSetId))) {
+            if (combo) {
+                foreach (var id in iconSetIds) {
+                    if (ImGui.Selectable($"{UiNames.GetName(id)}##{label}_{id}")) {
+                        setter(id);
+                    }
+                }
+            }
+        }
+
+        if (currentIconSetId != IconSetId.Inherit && Service.ClientState.LocalPlayer is { } player) {
+            var job = (Job)player.ClassJob.Id;
+            var iconGroupId = PlayerStylesheet.GetGenericRoleIconGroupId(currentIconSetId, job.GetRole());
+            var iconGroup = IconRegistrar.Get(iconGroupId);
+            var iconId = iconGroup.GetJobIcon((uint)job);
+            var icon = GetIconTexture(iconId);
+            if (icon != null) {
+                var textSize = ImGui.CalcTextSize("Important");
+                var imageSize = textSize.Y + ImGui.GetStyle().FramePadding.Y * 2;
+
+                var scale = iconGroup.Scale;
+                var b = (icon.Width * scale - icon.Width) / 2;
+                var uv0 = new Vector2(b, b) / icon.Size;
+                var uv1 = new Vector2(icon.Width - b, icon.Height - b) / icon.Size;
+                // Service.Log.Warning($"uv0 {uv0} uv1 {uv1}");
+
+                ImGui.SameLine();
+                ImGui.Image(icon.ImGuiHandle, new Vector2(imageSize, imageSize), uv0, uv1);
+            }
+        }
     }
 }

@@ -4,14 +4,18 @@ using System.IO;
 using System.Linq;
 using System.Numerics;
 using System.Reflection;
+using System.Reflection.Emit;
 using Dalamud.Interface.Colors;
 using Dalamud.Interface.Components;
 using Dalamud.Interface.Internal;
 using Dalamud.Interface.Utility.Raii;
 using ImGuiNET;
 using PartyIcons.Configuration;
+using PartyIcons.Entities;
+using PartyIcons.Stylesheet;
 using PartyIcons.UI.Utils;
 using PartyIcons.Utils;
+using PartyIcons.View;
 
 namespace PartyIcons.UI;
 
@@ -49,37 +53,31 @@ public sealed class NameplateSettings
     public void DrawNameplateSettings()
     {
         ImGui.Dummy(new Vector2(0, 2f));
-        var iconSetId = Plugin.Settings.IconSetId;
+
         ImGui.Text("Icon set:");
         ImGui.SameLine();
         ImGuiExt.SetComboWidth(Enum.GetValues<IconSetId>().Select(UiNames.GetName));
 
-        if (ImGui.BeginCombo("##icon_set", UiNames.GetName(iconSetId))) {
-            foreach (var id in Enum.GetValues<IconSetId>()) {
-                if (id == IconSetId.Inherit) continue;
-                if (ImGui.Selectable(UiNames.GetName(id) + "##icon_set_" + id)) {
-                    Plugin.Settings.IconSetId = id;
-                    Plugin.Settings.Save();
-                }
-            }
-
-            ImGui.EndCombo();
-        }
+        ImGuiExt.DrawIconSetCombo("##icon_set", false, () => Plugin.Settings.IconSetId, iconSetId =>
+        {
+            Plugin.Settings.IconSetId = iconSetId;
+            Plugin.Settings.Save();
+        });
 
         var iconSizeMode = Plugin.Settings.SizeMode;
         ImGui.Text("Nameplate size:");
         ImGui.SameLine();
         ImGuiExt.SetComboWidth(Enum.GetValues<NameplateSizeMode>().Select(x => x.ToString()));
 
-        if (ImGui.BeginCombo("##icon_size", iconSizeMode.ToString())) {
-            foreach (var mode in Enum.GetValues<NameplateSizeMode>()) {
-                if (ImGui.Selectable(mode + "##icon_set_" + mode)) {
-                    Plugin.Settings.SizeMode = mode;
-                    Plugin.Settings.Save();
+        using (var combo = ImRaii.Combo("##icon_size", iconSizeMode.ToString())) {
+            if (combo) {
+                foreach (var mode in Enum.GetValues<NameplateSizeMode>()) {
+                    if (ImGui.Selectable(mode + "##icon_set_" + mode)) {
+                        Plugin.Settings.SizeMode = mode;
+                        Plugin.Settings.Save();
+                    }
                 }
             }
-
-            ImGui.EndCombo();
         }
 
         ImGuiComponents.HelpMarker("Affects all presets, except Game Default.");

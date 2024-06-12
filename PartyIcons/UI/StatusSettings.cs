@@ -15,15 +15,6 @@ namespace PartyIcons.UI;
 
 public sealed class StatusSettings
 {
-    private IDalamudTextureWrap? GetIconTexture(uint iconId)
-    {
-        var path = Service.TextureProvider.GetIconPath(iconId, ITextureProvider.IconFlags.None);
-        if (path == null)
-            return null;
-
-        return Service.TextureProvider.GetTextureFromGame(path);
-    }
-
     private static StatusVisibility ToggleStatusDisplay(StatusVisibility visibility)
     {
         return visibility switch
@@ -141,7 +132,7 @@ public sealed class StatusSettings
 
                 ImGui.Separator();
 
-                var icon = GetIconTexture(row.Icon);
+                var icon = ImGuiExt.GetIconTexture(row.Icon);
                 if (icon != null) {
                     ImGui.Image(icon.ImGuiHandle, iconSize);
                     ImGui.SameLine();

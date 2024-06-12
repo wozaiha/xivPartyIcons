@@ -65,7 +65,7 @@ public sealed class PlayerStylesheet
         }
     }
 
-    public IconGroupId GetGenericRoleIconGroupId(IconSetId iconSetId, GenericRole role)
+    public static IconGroupId GetGenericRoleIconGroupId(IconSetId iconSetId, GenericRole role)
     {
         return iconSetId switch
         {
@@ -81,7 +81,7 @@ public sealed class PlayerStylesheet
                 _ => IconGroupId.GradientGrey
             },
             IconSetId.Embossed => IconGroupId.Embossed,
-            _ => throw new ArgumentException($"Unknown icon set id: {_configuration.IconSetId}")
+            _ => throw new ArgumentException($"Unknown icon set id: {iconSetId}")
         };
     }
 

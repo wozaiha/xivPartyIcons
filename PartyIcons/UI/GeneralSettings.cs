@@ -10,6 +10,7 @@ using Dalamud.Interface.Utility;
 using Dalamud.Interface.Utility.Raii;
 using ImGuiNET;
 using PartyIcons.UI.Utils;
+using PartyIcons.Utils;
 
 namespace PartyIcons.UI;
 
@@ -40,25 +41,8 @@ public sealed class GeneralSettings
             }
             ImGui.Dummy(new Vector2(0, 3));
         }
-        // ImGuiComponents.HelpMarker("Prioritizes certain status icons over job icons.\n\nInside of a duty, the only status icons that take priority are Disconnecting, Viewing Cutscene, Idle, and Group Pose.\n\nEven if this is unchecked, the Disconnecting icon will always take priority.");
 
-        /*
-        // Sample code for later when we want to incorporate icon previews into the UI.
-        var iconTex = _dataManager.GetIcon(61508);
-        //if (iconTex == null) return;
-
-        if (iconTex != null)
-        {
-            var tex = Interface.UiBuilder.LoadImageRaw(iconTex.GetRgbaImageData(), iconTex.Header.Width, iconTex.Header.Height, 4);
-        }
-        
-        // ...
-        
-        ImGui.Image(tex.ImGuiHandle, new Vector2(tex.Width, tex.Height));
-        */
-        
         var testingMode = Plugin.Settings.TestingMode;
-        
         if (ImGui.Checkbox("##testingMode", ref testingMode))
         {
             Plugin.Settings.TestingMode = testingMode;
