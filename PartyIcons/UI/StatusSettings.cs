@@ -54,6 +54,7 @@ public sealed class StatusSettings
         DrawStatusConfig(Plugin.Settings.StatusConfigs.Overworld, ref actions);
         DrawStatusConfig(Plugin.Settings.StatusConfigs.Instances, ref actions);
         DrawStatusConfig(Plugin.Settings.StatusConfigs.FieldOperations, ref actions);
+        DrawStatusConfig(Plugin.Settings.StatusConfigs.OverworldLegacy, ref actions);
 
         ImGui.Dummy(new Vector2(0, 15f));
         ImGui.PushStyleColor(0, ImGuiHelpers.DefaultColorPalette()[0]);

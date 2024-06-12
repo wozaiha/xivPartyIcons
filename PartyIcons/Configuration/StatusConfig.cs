@@ -56,6 +56,7 @@ public class StatusConfig
             StatusPreset.Overworld => Defaults.Overworld,
             StatusPreset.Instances => Defaults.Instances,
             StatusPreset.FieldOperations => Defaults.FieldOperations,
+            StatusPreset.OverworldLegacy => Defaults.OverworldLegacy,
             _ => throw new Exception($"Cannot reset status config of unknown type {Preset}")
         });
     }
@@ -121,6 +122,24 @@ public class StatusConfig
                 Status.NewAdventurer,
             ]);
 
+        public static StatusVisibility[] OverworldLegacy => StatusUtils.ListsToArray(
+            [
+                Status.Disconnected,
+                Status.SharingDuty,
+                Status.ViewingCutscene,
+                Status.Busy,
+                Status.AwayFromKeyboard,
+                Status.LookingToMeldMateria,
+                Status.LookingForParty,
+                Status.WaitingForDutyFinder,
+                Status.PartyLeader,
+                Status.PartyMember,
+                Status.EventParticipant,
+                Status.Roleplaying,
+                Status.CameraMode,
+            ],
+            []);
+
         public static StatusVisibility[] Custom => StatusUtils.ListsToArray([
                 Status.Disconnected,
             ],
@@ -175,6 +194,7 @@ public enum StatusPreset
     Overworld,
     Instances,
     FieldOperations,
+    OverworldLegacy,
 
     Custom = 10_000
 }

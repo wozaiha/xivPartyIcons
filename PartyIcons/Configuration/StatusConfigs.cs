@@ -12,17 +12,8 @@ public class StatusConfigs
     public StatusConfig Overworld = new(StatusPreset.Overworld);
     public StatusConfig Instances = new(StatusPreset.Instances);
     public StatusConfig FieldOperations = new(StatusPreset.FieldOperations);
+    public StatusConfig OverworldLegacy = new(StatusPreset.OverworldLegacy);
     public List<StatusConfig> Custom { get; set; } = [];
-
-    public IEnumerator<StatusConfig> GetEnumerator()
-    {
-        yield return Overworld;
-        yield return Instances;
-        yield return FieldOperations;
-        foreach (var custom in Custom) {
-            yield return custom;
-        }
-    }
 
     [JsonIgnore]
     public IEnumerable<StatusConfig> Configs => new Enumerable(this);
@@ -37,6 +28,7 @@ public class StatusConfigs
             yield return configs.Overworld;
             yield return configs.Instances;
             yield return configs.FieldOperations;
+            yield return configs.OverworldLegacy;
             foreach (var custom in configs.Custom) {
                 yield return custom;
             }

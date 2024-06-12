@@ -243,6 +243,7 @@ public sealed class SettingsWindow : IDisposable
             StatusPreset.Overworld => "Overworld",
             StatusPreset.Instances => "Instances",
             StatusPreset.FieldOperations => "Field Operations",
+            StatusPreset.OverworldLegacy => "Overworld (Legacy)",
             _ => config.Preset + "/" + config.Name + "/" + config.Id
         };
     }

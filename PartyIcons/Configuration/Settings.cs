@@ -181,6 +181,8 @@ public class Settings : IPluginConfiguration
                 return configs.Instances;
             case StatusPreset.FieldOperations:
                 return configs.FieldOperations;
+            case StatusPreset.OverworldLegacy:
+                return configs.OverworldLegacy;
             case StatusPreset.Custom:
                 foreach (var config in configs.Custom.Where(config => config.Id == selector.Id)) {
                     return config;
