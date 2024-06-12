@@ -35,18 +35,18 @@ public class CommandHandler : IDisposable
             Plugin.RoleTracker.ResetOccupations();
             Plugin.RoleTracker.ResetAssignments();
             Plugin.RoleTracker.CalculateUnassignedPartyRoles();
-            Service.ChatGui.Print("Occupations are reset, roles are auto assigned.");
+            Service.ChatGui.Print("Occupations are reset, roles are auto assigned.", Service.PluginInterface.InternalName, 45);
         }
         else if (arguments == "dbg r")
         {
             Plugin.RoleTracker.ResetOccupations();
             Plugin.RoleTracker.ResetAssignments();
-            Service.ChatGui.Print("Occupations/assignments are reset.");
+            Service.ChatGui.Print("Occupations/assignments are reset.", Service.PluginInterface.InternalName, 45);
         }
         else if (arguments == "dbg state")
         {
-            Service.ChatGui.Print($"Current mode is {Plugin.NameplateView.PartyMode}, party count {Service.PartyList.Length}");
-            Service.ChatGui.Print(Plugin.RoleTracker.DebugDescription());
+            Service.ChatGui.Print($"Current mode is {Plugin.NameplateView.PartyDisplay.Mode}, party count {Service.PartyList.Length}", Service.PluginInterface.InternalName, 45);
+            Service.ChatGui.Print(Plugin.RoleTracker.DebugDescription(), Service.PluginInterface.InternalName, 45);
         }
         else if (arguments == "dbg party")
         {

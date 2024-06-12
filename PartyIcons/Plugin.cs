@@ -22,7 +22,6 @@ public sealed class Plugin : IDalamudPlugin
     public static CommandHandler CommandHandler { get; private set; } = null!;
     public static Settings Settings { get; private set; } = null!;
     public static PlayerStylesheet PlayerStylesheet { get; private set; } = null!;
-    public static StatusResolver StatusResolver { get; private set; } = null!;
 
     public Plugin(DalamudPluginInterface pluginInterface)
     {
@@ -38,11 +37,10 @@ public sealed class Plugin : IDalamudPlugin
 
         PartyHudView = new PartyListHUDView(PlayerStylesheet);
         RoleTracker = new RoleTracker(Settings);
-        StatusResolver = new StatusResolver(Settings);
-        NameplateView = new NameplateView(RoleTracker, Settings, PlayerStylesheet, StatusResolver);
+        NameplateView = new NameplateView(RoleTracker, Settings, PlayerStylesheet);
         ChatNameUpdater = new ChatNameUpdater(RoleTracker, PlayerStylesheet);
         PartyListHudUpdater = new PartyListHUDUpdater(PartyHudView, RoleTracker, Settings);
-        ModeSetter = new ViewModeSetter(NameplateView, Settings, ChatNameUpdater, PartyListHudUpdater, StatusResolver);
+        ModeSetter = new ViewModeSetter(NameplateView, Settings, ChatNameUpdater, PartyListHudUpdater);
         NameplateUpdater = new NameplateUpdater(NameplateView);
         ContextMenu = new ContextMenu(RoleTracker, Settings, PlayerStylesheet);
         CommandHandler = new CommandHandler();

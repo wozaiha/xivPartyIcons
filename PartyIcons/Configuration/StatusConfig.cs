@@ -15,7 +15,7 @@ public class StatusConfig
     public string? Name;
 
     [JsonConverter(typeof(EnumKeyConverter<Status, StatusVisibility>))]
-    public Dictionary<Status, StatusVisibility> DisplayMap = new();
+    public Dictionary<Status, StatusVisibility> DisplayMap = [];
 
     [JsonConstructor]
     private StatusConfig(StatusPreset preset, Guid? id)
@@ -60,7 +60,7 @@ public class StatusConfig
         });
     }
 
-    private static class Defaults
+    public static class Defaults
     {
         public static StatusVisibility[] Overworld => StatusUtils.ListsToArray(
             [],
@@ -125,6 +125,8 @@ public class StatusConfig
                 Status.Disconnected,
             ],
             []);
+
+        public static StatusVisibility[] None => StatusUtils.ListsToArray([], []);
     }
 }
 

@@ -12,13 +12,9 @@ namespace PartyIcons.View;
 
 public sealed class NameplateView : IDisposable
 {
-    // [PluginService]
-    // private ObjectTable ObjectTable { get; set; }
-
     private readonly Settings _configuration;
     private readonly PlayerStylesheet _stylesheet;
     private readonly RoleTracker _roleTracker;
-    private readonly StatusResolver _statusResolver;
 
     private const short ExIconWidth = 32;
     private const short ExIconWidthHalf = 16;
@@ -30,27 +26,75 @@ public sealed class NameplateView : IDisposable
 
     private const string FullWidthSpace = "　";
 
-    public ZoneType ZoneType { get; set; }
-    public NameplateMode PartyMode { get; set; }
-    public NameplateMode OthersMode { get; set; }
+    internal DisplayConfig PartyDisplay { get; private set; } = null!;
+    internal DisplayConfig OthersDisplay { get; private set; } = null!;
 
-    public DisplayConfig PartyDisplay { get; set; }
-    public DisplayConfig OthersDisplay { get; set; }
+    private StatusVisibility[] PartyStatus { get; set; } = null!;
+    private StatusVisibility[] OthersStatus { get; set; } = null!;
 
-    public StatusVisibility[] PartyStatus { get; set; }
-    public StatusVisibility[] OthersStatus { get; set; }
+    private const ZoneType DefaultZone = ZoneType.Overworld;
+    private static readonly StatusSelector DefaultStatusSelector = new(DefaultZone);
 
-    public NameplateView(RoleTracker roleTracker, Settings configuration, PlayerStylesheet stylesheet,
-        StatusResolver statusResolver)
+    public NameplateView(RoleTracker roleTracker, Settings configuration, PlayerStylesheet stylesheet)
     {
         _roleTracker = roleTracker;
         _configuration = configuration;
         _stylesheet = stylesheet;
-        _statusResolver = statusResolver;
+
+        SetZoneType(DefaultZone);
     }
 
     public void Dispose()
     {
+    }
+
+    public void SetZoneType(ZoneType zoneType)
+    {
+        var selectors = _configuration.DisplaySelectors;
+
+        var partyDisplay = _configuration.GetDisplayConfig(zoneType switch
+        {
+            ZoneType.Overworld => selectors.DisplayOverworld,
+            ZoneType.Dungeon => selectors.DisplayDungeon,
+            ZoneType.Raid => selectors.DisplayRaid,
+            ZoneType.AllianceRaid => selectors.DisplayAllianceRaid,
+            ZoneType.FieldOperation => selectors.DisplayFieldOperationParty,
+            _ => throw new ArgumentOutOfRangeException($"Unknown zone type {zoneType}")
+        });
+
+        var othersDisplay = _configuration.GetDisplayConfig(zoneType switch
+        {
+            ZoneType.Overworld => selectors.DisplayOthers,
+            ZoneType.Dungeon => selectors.DisplayOthers,
+            ZoneType.Raid => selectors.DisplayOthers,
+            ZoneType.AllianceRaid => selectors.DisplayOthers,
+            ZoneType.FieldOperation => selectors.DisplayFieldOperationOthers,
+            _ => throw new ArgumentOutOfRangeException($"Unknown zone type {zoneType}")
+        });
+
+        PartyDisplay = partyDisplay;
+        if (PartyDisplay.Mode is NameplateMode.Default or NameplateMode.Hide) {
+            PartyStatus = StatusConfig.Defaults.None;
+        }
+        else {
+            if (!partyDisplay.StatusSelectors.TryGetValue(zoneType, out var partyStatusSelector)) {
+                Service.Log.Warning($"Couldn't find status selector for zoneType {zoneType} in config {partyDisplay.Preset}/{partyDisplay.Id}");
+                partyStatusSelector = DefaultStatusSelector;
+            }
+            PartyStatus = StatusUtils.DictToArray(_configuration.GetStatusConfig(partyStatusSelector).DisplayMap);
+        }
+
+        OthersDisplay = othersDisplay;
+        if (OthersDisplay.Mode is NameplateMode.Default or NameplateMode.Hide) {
+            OthersStatus = StatusConfig.Defaults.None;
+        }
+        else {
+            if (!othersDisplay.StatusSelectors.TryGetValue(zoneType, out var othersStatusSelector)) {
+                Service.Log.Warning($"Couldn't find status selector for zoneType {zoneType} in config {othersDisplay.Preset}/{othersDisplay.Id}");
+                othersStatusSelector = DefaultStatusSelector;
+            }
+            OthersStatus = StatusUtils.DictToArray(_configuration.GetStatusConfig(othersStatusSelector).DisplayMap);
+        }
     }
 
     public void UpdateViewData(ref UpdateContext context)
@@ -416,15 +460,6 @@ public sealed class NameplateView : IDisposable
             );
             subNode->LoadIconTexture((int)context.StatusIconId, 0);
         }
-    }
-
-    private NameplateMode GetModeForNameplate(UpdateContext context)
-    {
-        if (_configuration.TestingMode || context.IsPartyMember) {
-            return PartyMode;
-        }
-
-        return OthersMode;
     }
 
     private DisplayConfig GetDisplayConfig(UpdateContext context)

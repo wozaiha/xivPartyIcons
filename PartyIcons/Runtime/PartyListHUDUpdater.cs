@@ -69,10 +69,13 @@ public sealed class PartyListHUDUpdater : IDisposable
 
     public void EnableUpdates(bool value)
     {
+        // Service.Log.Warning("EnableUpdates: Checking");
         if (!value && _enabled) {
+            // Service.Log.Warning("EnableUpdates: Revert");
             RevertHud();
         }
 
+        // Service.Log.Warning($"EnableUpdates: Enable: {value}");
         _enabled = value;
     }
 
