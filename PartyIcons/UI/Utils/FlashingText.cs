@@ -1,10 +1,10 @@
 using System;
 using System.Diagnostics;
 using System.Numerics;
+using Dalamud.Interface.Utility.Raii;
 using ImGuiNET;
-using PartyIcons.Configuration;
 
-namespace PartyIcons.UI.Controls;
+namespace PartyIcons.UI.Utils;
 
 public class FlashingText
 {
@@ -61,16 +61,10 @@ public class FlashingText
             }
         }
 
-        if (IsFlashing)
-        {
-            ImGui.PushStyleColor(0, flashColor);
-        }
-        
-        bool result = draw.Invoke();//ImGui.Text(text);
 
-        if (IsFlashing)
-        {
-            ImGui.PopStyleColor();
+        bool result;
+        using (ImRaii.PushColor(ImGuiCol.Text, flashColor, IsFlashing)) {
+            result = draw.Invoke();
         }
 
         return result;

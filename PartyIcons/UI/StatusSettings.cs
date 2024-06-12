@@ -1,12 +1,12 @@
 ﻿using System.Collections.Generic;
 using System.Numerics;
 using Dalamud.Interface.Internal;
-using Dalamud.Interface.Utility;
 using Dalamud.Interface.Utility.Raii;
 using Dalamud.Plugin.Services;
 using ImGuiNET;
 using Lumina.Excel.GeneratedSheets;
 using PartyIcons.Configuration;
+using PartyIcons.UI.Utils;
 using PartyIcons.Utils;
 using Action = System.Action;
 using Status = PartyIcons.Entities.Status;
@@ -37,17 +37,11 @@ public sealed class StatusSettings
 
     public void DrawStatusSettings()
     {
-        const float separatorPadding = 2f;
-        ImGui.Dummy(new Vector2(0, separatorPadding));
+        ImGuiExt.Spacer(2);
 
         ImGui.TextDisabled("Configure status icon visibility based on location");
-        ImGui.Dummy(new Vector2(0, separatorPadding));
 
-        ImGui.PushStyleColor(0, ImGuiHelpers.DefaultColorPalette()[0]);
-        ImGui.Text("Presets");
-        ImGui.PopStyleColor();
-        ImGui.Separator();
-        ImGui.Dummy(new Vector2(0, 2f));
+        ImGuiExt.SectionHeader("Presets");
 
         List<Action> actions = [];
 
@@ -56,18 +50,15 @@ public sealed class StatusSettings
         DrawStatusConfig(Plugin.Settings.StatusConfigs.FieldOperations, ref actions);
         DrawStatusConfig(Plugin.Settings.StatusConfigs.OverworldLegacy, ref actions);
 
-        ImGui.Dummy(new Vector2(0, 15f));
-        ImGui.PushStyleColor(0, ImGuiHelpers.DefaultColorPalette()[0]);
-        ImGui.Text("User-created");
-        ImGui.PopStyleColor();
-        ImGui.Separator();
-        ImGui.Dummy(new Vector2(0, 2f));
+        ImGuiExt.SectionHeader("User-created");
 
         if (ImGui.Button("Create new")) {
             Plugin.Settings.StatusConfigs.Custom.Add(
                 new StatusConfig($"Custom status list {Plugin.Settings.StatusConfigs.Custom.Count + 1}"));
             Plugin.Settings.Save();
         }
+
+        ImGuiExt.Spacer(2);
 
         foreach (var statusConfig in Plugin.Settings.StatusConfigs.Custom) {
             DrawStatusConfig(statusConfig, ref actions);
@@ -89,14 +80,14 @@ public sealed class StatusSettings
         var sheet = Service.DataManager.GameData.GetExcelSheet<OnlineStatus>()!;
 
         using (ImRaii.PushId($"status@{config.Preset}@{config.Id}")) {
-            if (!ImGui.CollapsingHeader($"{SettingsWindow.GetName(config)}###statusHeader@{config.Preset}@{config.Id}")) return;
+            if (!ImGui.CollapsingHeader($"{UiNames.GetName(config)}###statusHeader@{config.Preset}@{config.Id}")) return;
 
             using (ImRaii.PushIndent(iconSize.X + ImGui.GetStyle().FramePadding.X + ImGui.GetStyle().ItemSpacing.X)) {
                 if (config.Preset == StatusPreset.Custom) {
                     ImGui.TextDisabled("Name: ");
 
                     ImGui.SameLine();
-                    ImGui.PushItemWidth(ImGui.GetContentRegionAvail().X - 10);
+                    ImGui.SetNextItemWidth(ImGui.GetContentRegionAvail().X - 10);
                     var name = config.Name ?? "";
                     if (ImGui.InputText("##rename", ref name, 100, ImGuiInputTextFlags.EnterReturnsTrue)) {
                         actions.Add(() =>
@@ -105,7 +96,6 @@ public sealed class StatusSettings
                             Plugin.Settings.Save();
                         });
                     }
-                    ImGui.PopItemWidth();
                 }
 
                 ImGui.TextDisabled("Other actions: ");
@@ -137,7 +127,7 @@ public sealed class StatusSettings
                     actions.Add(() =>
                     {
                         Plugin.Settings.StatusConfigs.Custom.Add(new StatusConfig(
-                            $"{SettingsWindow.GetName(config)} ({Plugin.Settings.StatusConfigs.Custom.Count + 1})", config));
+                            $"{UiNames.GetName(config)} ({Plugin.Settings.StatusConfigs.Custom.Count + 1})", config));
                         Plugin.Settings.Save();
                     });
                 }

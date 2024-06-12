@@ -9,7 +9,7 @@ using Dalamud.Interface.Style;
 using Dalamud.Interface.Utility;
 using Dalamud.Interface.Utility.Raii;
 using ImGuiNET;
-using PartyIcons.UI.Controls;
+using PartyIcons.UI.Utils;
 
 namespace PartyIcons.UI;
 

@@ -1,9 +1,10 @@
 using System;
 using System.Linq;
-using System.Numerics;
-using Dalamud.Interface.Utility;
+using Dalamud.Interface.Utility.Raii;
 using ImGuiNET;
 using PartyIcons.Configuration;
+using PartyIcons.UI.Utils;
+using PartyIcons.Utils;
 
 namespace PartyIcons.UI;
 
@@ -11,16 +12,11 @@ public sealed class ChatNameSettings
 {
     public void DrawChatNameSettings()
     {
-        const float separatorPadding = 2f;
-        ImGui.Dummy(new Vector2(0, separatorPadding));
-        
-        ImGui.PushStyleColor(0, ImGuiHelpers.DefaultColorPalette()[0]);
-        ImGui.Text("Overworld");
-        ImGui.PopStyleColor();
-        ImGui.Separator();
-        ImGui.Dummy(new Vector2(0, separatorPadding));
-        ImGui.Indent(15 * ImGuiHelpers.GlobalScale);
-        {
+        ImGuiExt.Spacer(2);
+
+        ImGuiExt.SectionHeader("Overworld");
+
+        using (ImRaii.PushIndent(15f)) {
             ChatModeSection("##chat_overworld",
                 () => Plugin.Settings.ChatOverworld,
                 (config) => Plugin.Settings.ChatOverworld = config,
@@ -31,16 +27,10 @@ public sealed class ChatNameSettings
                 (config) => Plugin.Settings.ChatOthers = config,
                 "Others:");
         }
-        ImGui.Indent(-15 * ImGuiHelpers.GlobalScale);
-        ImGui.Dummy(new Vector2(0, 2f));
-        
-        ImGui.PushStyleColor(0, ImGuiHelpers.DefaultColorPalette()[0]);
-        ImGui.Text("Instances");
-        ImGui.PopStyleColor();
-        ImGui.Separator();
-        ImGui.Dummy(new Vector2(0, separatorPadding));
-        ImGui.Indent(15 * ImGuiHelpers.GlobalScale);
-        {
+
+        ImGuiExt.SectionHeader("Instances");
+
+        using (ImRaii.PushIndent(15f)) {
             ChatModeSection("##chat_dungeon",
                 () => Plugin.Settings.ChatDungeon,
                 (config) => Plugin.Settings.ChatDungeon = config,
@@ -56,8 +46,6 @@ public sealed class ChatNameSettings
                 (config) => Plugin.Settings.ChatAllianceRaid = config,
                 "Alliance:");
         }
-        ImGui.Indent(-15 * ImGuiHelpers.GlobalScale);
-        ImGui.Dummy(new Vector2(0, 2f));
     }
     
     private static void ChatModeSection(string label, Func<ChatConfig> getter, Action<ChatConfig> setter, string title = "Chat name: ")
@@ -66,7 +54,7 @@ public sealed class ChatNameSettings
 
         ImGui.Text(title);
         ImGui.SameLine(100f);
-        SettingsWindow.SetComboWidth(Enum.GetValues<ChatMode>().Select(ChatModeToString));
+        ImGuiExt.SetComboWidth(Enum.GetValues<ChatMode>().Select(UiNames.GetName));
 
         // hack to fix incorrect configurations
         try
@@ -79,19 +67,18 @@ public sealed class ChatNameSettings
             Plugin.Settings.Save();
         }
 
-        if (ImGui.BeginCombo(label, ChatModeToString(NewConf.Mode)))
-        {
-            foreach (var mode in Enum.GetValues<ChatMode>())
-            {
-                if (ImGui.Selectable(ChatModeToString(mode), mode == NewConf.Mode))
+        using (var combo = ImRaii.Combo(label, UiNames.GetName(NewConf.Mode))) {
+            if (combo) {
+                foreach (var mode in Enum.GetValues<ChatMode>())
                 {
-                    NewConf.Mode = mode;;
-                    setter(NewConf);
-                    Plugin.Settings.Save();
+                    if (ImGui.Selectable(UiNames.GetName(mode), mode == NewConf.Mode))
+                    {
+                        NewConf.Mode = mode;;
+                        setter(NewConf);
+                        Plugin.Settings.Save();
+                    }
                 }
             }
-
-            ImGui.EndCombo();
         }
 
         ImGui.SameLine();
@@ -103,16 +90,5 @@ public sealed class ChatNameSettings
             setter(NewConf);
             Plugin.Settings.Save();
         }
-    }
-    
-    private static string ChatModeToString(ChatMode mode)
-    {
-        return mode switch
-        {
-            ChatMode.GameDefault => "Game Default",
-            ChatMode.Role => "Role",
-            ChatMode.Job => "Job abbreviation",
-            _ => throw new ArgumentException()
-        };
     }
 }

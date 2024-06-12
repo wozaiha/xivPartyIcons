@@ -4,13 +4,11 @@ using System.Linq;
 using System.Numerics;
 using Dalamud.Interface.Colors;
 using Dalamud.Interface.Components;
-using Dalamud.Interface.Internal;
-using Dalamud.Interface.Utility;
 using Dalamud.Interface.Utility.Raii;
-using Dalamud.Plugin.Services;
 using ImGuiNET;
 using PartyIcons.Configuration;
 using PartyIcons.Runtime;
+using PartyIcons.UI.Utils;
 using PartyIcons.Utils;
 using Action = System.Action;
 
@@ -22,17 +20,11 @@ public sealed class AppearanceSettings
 
     public void DrawAppearanceSettings()
     {
-        const float separatorPadding = 2f;
-        ImGui.Dummy(new Vector2(0, separatorPadding));
+        ImGuiExt.Spacer(2);
 
         ImGui.TextDisabled("Configure nameplate appearance");
-        ImGui.Dummy(new Vector2(0, separatorPadding));
 
-        ImGui.PushStyleColor(0, ImGuiHelpers.DefaultColorPalette()[0]);
-        ImGui.Text("Presets");
-        ImGui.PopStyleColor();
-        ImGui.Separator();
-        ImGui.Dummy(new Vector2(0, 2f));
+        ImGuiExt.SectionHeader("Presets");
 
         List<Action> actions = [];
 
@@ -42,27 +34,23 @@ public sealed class AppearanceSettings
         DrawDisplayConfig(Plugin.Settings.DisplayConfigs.BigJobIconAndPartySlot, ref actions);
         DrawDisplayConfig(Plugin.Settings.DisplayConfigs.RoleLetters, ref actions);
 
-        ImGui.Dummy(new Vector2(0, 15f));
-        ImGui.PushStyleColor(0, ImGuiHelpers.DefaultColorPalette()[0]);
-        ImGui.Text("User-created");
-        ImGui.PopStyleColor();
-        ImGui.Separator();
-        ImGui.Dummy(new Vector2(0, 2f));
+        ImGuiExt.SectionHeader("User-created");
 
         var modes = Enum.GetValues<NameplateMode>()
             .Where(v => v is not (NameplateMode.Default or NameplateMode.Hide))
             .ToList();
 
-        SettingsWindow.SetComboWidth(modes.Select(SettingsWindow.GetName));
-        if (ImGui.BeginCombo("##newDisplay", SettingsWindow.GetName(_createMode))) {
-            foreach (var mode in modes) {
-                if (ImGui.Selectable(SettingsWindow.GetName(mode), mode == _createMode)) {
-                    Service.Log.Info($"set to {mode}");
-                    _createMode = mode;
+        ImGuiExt.SetComboWidth(modes.Select(UiNames.GetName));
+
+        using (var combo = ImRaii.Combo("##newDisplay", UiNames.GetName(_createMode))) {
+            if (combo) {
+                foreach (var mode in modes) {
+                    if (ImGui.Selectable(UiNames.GetName(mode), mode == _createMode)) {
+                        Service.Log.Info($"set to {mode}");
+                        _createMode = mode;
+                    }
                 }
             }
-
-            ImGui.EndCombo();
         }
 
         ImGui.SameLine();
@@ -72,7 +60,7 @@ public sealed class AppearanceSettings
             Plugin.Settings.Save();
         }
 
-        ImGui.Dummy(new Vector2(0, 10));
+        ImGuiExt.Spacer(2);
 
         foreach (var statusConfig in Plugin.Settings.DisplayConfigs.Custom) {
             DrawDisplayConfig(statusConfig, ref actions);
@@ -87,7 +75,7 @@ public sealed class AppearanceSettings
     {
         using var id = ImRaii.PushId($"display@{config.Preset}@{config.Id}");
 
-        if (!ImGui.CollapsingHeader($"{GetName(config)}###statusHeader@{config.Preset}@{config.Id}"))
+        if (!ImGui.CollapsingHeader($"{UiNames.GetName(config)}###statusHeader@{config.Preset}@{config.Id}"))
             return;
 
         using var indent = ImRaii.PushIndent();
@@ -96,7 +84,7 @@ public sealed class AppearanceSettings
             ImGui.TextDisabled("User-created");
             // ImGui.TextDisabled("Based on: ");
             // ImGui.SameLine();
-            ImGui.TextUnformatted(SettingsWindow.GetName(config.Mode));
+            ImGui.TextUnformatted(UiNames.GetName(config.Mode));
 
             var name = config.Name ?? "";
             if (ImGui.InputText("Name##rename", ref name, 100, ImGuiInputTextFlags.EnterReturnsTrue)) {
@@ -116,10 +104,10 @@ public sealed class AppearanceSettings
         iconSetIds.Remove(IconSetId.Inherit);
         iconSetIds.Insert(0, IconSetId.Inherit);
 
-        using (var combo = ImRaii.Combo("Icon set", SettingsWindow.GetName(config.IconSetId))) {
+        using (var combo = ImRaii.Combo("Icon set", UiNames.GetName(config.IconSetId))) {
             if (combo) {
                 foreach (var iconSetId in iconSetIds) {
-                    if (ImGui.Selectable(SettingsWindow.GetName(iconSetId), iconSetId == config.IconSetId)) {
+                    if (ImGui.Selectable(UiNames.GetName(iconSetId), iconSetId == config.IconSetId)) {
                         config.IconSetId = iconSetId;
                         Plugin.Settings.Save();
                     }
@@ -154,7 +142,7 @@ public sealed class AppearanceSettings
             - 'Replace' will move the status icon into the job item slot, leaving the status icon empty
             """);
 
-        ImGui.Dummy(new Vector2(0, 6));
+        ImGuiExt.Spacer(6);
         ImGui.TextDisabled("Job Icon");
         using (ImRaii.PushId("jobIcon")) {
             DrawJobIcon(() => config.ExIcon, icon => config.ExIcon = icon);
@@ -165,13 +153,13 @@ public sealed class AppearanceSettings
             DrawJobIcon(() => config.SubIcon, icon => config.SubIcon = icon);
         }
 
-        ImGui.Dummy(new Vector2(0, 6));
+        ImGuiExt.Spacer(6);
         ImGui.TextDisabled("Status icon visibility by location");
         foreach (var zoneType in Enum.GetValues<ZoneType>()) {
             DrawStatusSelector(config, zoneType);
         }
 
-        ImGui.Dummy(new Vector2(0, 6));
+        ImGuiExt.Spacer(6);
         ImGui.TextDisabled("Other actions");
         if (ImGuiExt.ButtonEnabledWhen(ImGui.GetIO().KeyCtrl, "Reset to default")) {
             config.Reset();
@@ -194,7 +182,7 @@ public sealed class AppearanceSettings
             ImGuiExt.HoverTooltip("Hold Control to allow deletion");
         }
 
-        ImGui.Dummy(new Vector2(0, 3));
+        ImGuiExt.Spacer(3);
     }
 
     private void DrawJobIcon(Func<IconCustomizeConfig> getter, Action<IconCustomizeConfig> setter)
@@ -229,33 +217,18 @@ public sealed class AppearanceSettings
     private void DrawStatusSelector(DisplayConfig config, ZoneType zoneType)
     {
         var currentSelector = config.StatusSelectors[zoneType];
-        SettingsWindow.SetComboWidth(Plugin.Settings.StatusConfigs.Selectors.Select(SettingsWindow.GetName));
-        using var combo = ImRaii.Combo($"{SettingsWindow.GetName(zoneType)}##zoneSelector@{zoneType}",
-            SettingsWindow.GetName(currentSelector));
+        ImGuiExt.SetComboWidth(Plugin.Settings.StatusConfigs.Selectors.Select(UiNames.GetName));
+        using var combo = ImRaii.Combo($"{UiNames.GetName(zoneType)}##zoneSelector@{zoneType}",
+            UiNames.GetName(currentSelector));
         if (!combo) return;
 
         foreach (var selector in Plugin.Settings.StatusConfigs.Selectors) {
-            if (selector.Preset == StatusPreset.Custom) {
-                ImGui.PushStyleColor(ImGuiCol.Text, ImGuiColors.HealerGreen);
-            }
-
-            if (ImGui.Selectable(SettingsWindow.GetName(selector), currentSelector == selector)) {
+            using var col = ImRaii.PushColor(ImGuiCol.Text, ImGuiColors.HealerGreen,
+                selector.Preset == StatusPreset.Custom);
+            if (ImGui.Selectable(UiNames.GetName(selector), currentSelector == selector)) {
                 config.StatusSelectors[zoneType] = selector;
                 Plugin.Settings.Save();
             }
-
-            if (selector.Preset == StatusPreset.Custom) {
-                ImGui.PopStyleColor();
-            }
         }
-    }
-
-    private static string GetName(DisplayConfig config)
-    {
-        if (config.Preset == DisplayPreset.Custom) {
-            return $"{SettingsWindow.GetName(config.Mode)} ({config.Name})";
-        }
-
-        return SettingsWindow.GetName(config.Mode);
     }
 }

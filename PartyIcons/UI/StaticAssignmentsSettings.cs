@@ -7,6 +7,7 @@ using Dalamud.Interface.Components;
 using Dalamud.Interface.Utility;
 using ImGuiNET;
 using PartyIcons.Entities;
+using PartyIcons.Utils;
 
 namespace PartyIcons.UI;
 
@@ -105,7 +106,7 @@ public sealed class StaticAssignmentsSettings
             }
 
             ImGui.SameLine();
-            SettingsWindow.SetComboWidth(Enum.GetValues<RoleId>().Select(x => Plugin.PlayerStylesheet.GetRoleName(x)));
+            ImGuiExt.SetComboWidth(Enum.GetValues<RoleId>().Select(x => Plugin.PlayerStylesheet.GetRoleName(x)));
 
             if (ImGui.BeginCombo("##role_combo_" + kv.Key,
                     Plugin.PlayerStylesheet.GetRoleName(Plugin.Settings.StaticAssignments[kv.Key])))
@@ -134,7 +135,7 @@ public sealed class StaticAssignmentsSettings
         }
 
         ImGui.SameLine();
-        SettingsWindow.SetComboWidth(Enum.GetValues<RoleId>().Select(x => Plugin.PlayerStylesheet.GetRoleName(x)));
+        ImGuiExt.SetComboWidth(Enum.GetValues<RoleId>().Select(x => Plugin.PlayerStylesheet.GetRoleName(x)));
 
         if (ImGui.BeginCombo("##new_role_combo", Plugin.PlayerStylesheet.GetRoleName(_occupationNewRole)))
         {
