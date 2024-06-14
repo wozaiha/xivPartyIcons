@@ -30,14 +30,7 @@ public sealed class PartyStateTracker : IDisposable
     private unsafe void FrameworkOnUpdate(IFramework framework)
     {
         var agentHud = AgentHUD.Instance();
-
-        var partySize = agentHud->PartyMemberCount;
-        if (partySize == 0 || (partySize == 1 && _lastPartySize == 1)) {
-            return;
-        }
-
-        var gm = GroupManager.Instance();
-        if (gm == null) return;
+        if (agentHud->PartyMemberCount == 0) return;
 
         var change = PartyChangeType.None;
 
@@ -49,9 +42,10 @@ public sealed class PartyStateTracker : IDisposable
             }
         }
 
-        if (partySize != _lastPartySize) {
-            change = PartyChangeType.Member;
-        }
+        var gm = GroupManager.Instance();
+        if (gm == null) return;
+
+        var partySize = gm->MemberCount;
 
         for (var i = 0; i < partySize; i++) {
             var member = gm->PartyMembersSpan.GetPointer(i);
@@ -72,10 +66,14 @@ public sealed class PartyStateTracker : IDisposable
             }
         }
 
-        _lastPartySize = partySize;
+        if (_lastPartySize != partySize) {
+            _lastPartySize = partySize;
+            change = PartyChangeType.Member;
+        }
 
         if (change != PartyChangeType.None) {
             Service.Log.Debug($"OnPartyChange ({change})");
+            // PartyListHUDUpdater.DebugPartyData();
             OnPartyStateChange?.Invoke(change);
         }
     }

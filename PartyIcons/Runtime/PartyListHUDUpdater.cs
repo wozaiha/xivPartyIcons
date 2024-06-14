@@ -188,7 +188,8 @@ public sealed class PartyListHUDUpdater : IDisposable
 
         if (hudPartyMember->ContentId > 0) {
             var gm = GroupManager.Instance();
-            foreach (var member in gm->PartyMembersSpan.PointerEnumerator()) {
+            for (var i = 0; i < gm->MemberCount; i++) {
+                var member = gm->PartyMembersSpan.GetPointer(i);
                 if (hudPartyMember->ContentId == (ulong)member->ContentID) {
                     return member->HomeWorld;
                 }
@@ -203,7 +204,7 @@ public sealed class PartyListHUDUpdater : IDisposable
         Service.Log.Info("======");
 
         var agentHud = AgentHUD.Instance();
-        Service.Log.Info($"Members (AgentHud) [{agentHud->PartyMemberCount}]:");
+        Service.Log.Info($"Members (AgentHud) [{agentHud->PartyMemberCount}] (0x{(nint)agentHud:X}):");
         for (var i = 0; i < agentHud->PartyMemberListSpan.Length; i++) {
             var member = agentHud->PartyMemberListSpan.GetPointer(i);
             if (member->Name != null) {
@@ -221,8 +222,8 @@ public sealed class PartyListHUDUpdater : IDisposable
         }
 
         var gm = GroupManager.Instance();
-        Service.Log.Info($"Members (GroupManager) [{gm->MemberCount}]:");
-        for (var i = 0; i < gm->PartyMembersSpan.Length; i++) {
+        Service.Log.Info($"Members (GroupManager) [{gm->MemberCount}] (0x{(nint)gm:X}):");
+        for (var i = 0; i < gm->MemberCount; i++) {
             var member = gm->PartyMembersSpan.GetPointer(i);
             if (member->HomeWorld != 65535) {
                 var name = MemoryHelper.ReadSeStringNullTerminated((nint)member->Name);
