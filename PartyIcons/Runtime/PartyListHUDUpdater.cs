@@ -1,161 +1,151 @@
 ﻿using System;
 using Dalamud.Memory;
 using Dalamud.Plugin.Services;
+using FFXIVClientStructs.FFXIV.Client.Game.Group;
 using FFXIVClientStructs.FFXIV.Client.UI;
 using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 using FFXIVClientStructs.FFXIV.Client.UI.Info;
 using FFXIVClientStructs.Interop;
 using PartyIcons.Configuration;
-using PartyIcons.Utils;
 using PartyIcons.View;
 
 namespace PartyIcons.Runtime;
 
 public sealed class PartyListHUDUpdater : IDisposable
 {
-    private bool _enabled;
-
     private readonly Settings _configuration;
     private readonly PartyListHUDView _view;
     private readonly RoleTracker _roleTracker;
+    private readonly PartyStateTracker _partyStateTracker;
 
-    private bool _displayingRoles;
-    private bool _previousInParty;
-
+    private bool _enabled;
     private bool _updateQueued;
+    private bool _hasModifiedNodes;
 
-    public PartyListHUDUpdater(PartyListHUDView view, RoleTracker roleTracker, Settings configuration)
+    public PartyListHUDUpdater(PartyListHUDView view, RoleTracker roleTracker, Settings configuration,
+        PartyStateTracker partyStateTracker)
     {
         _view = view;
         _roleTracker = roleTracker;
         _configuration = configuration;
+        _partyStateTracker = partyStateTracker;
     }
 
     public void Enable()
     {
-        Service.Framework.Update += OnUpdate;
         Service.ClientState.EnterPvP += OnEnterPvP;
         Service.ClientState.LeavePvP += OnLeavePvP;
         Service.ClientState.TerritoryChanged += OnTerritoryChanged;
         _configuration.OnSave += OnConfigurationSave;
         _roleTracker.OnAssignedRolesUpdated += OnAssignedRolesUpdated;
+        _partyStateTracker.OnPartyStateChange += OnPartyStateChange;
     }
 
     public void Dispose()
     {
-        Service.Framework.Update -= OnUpdate;
         Service.ClientState.EnterPvP -= OnEnterPvP;
         Service.ClientState.LeavePvP -= OnLeavePvP;
         Service.ClientState.TerritoryChanged -= OnTerritoryChanged;
         _configuration.OnSave -= OnConfigurationSave;
         _roleTracker.OnAssignedRolesUpdated -= OnAssignedRolesUpdated;
+        _partyStateTracker.OnPartyStateChange -= OnPartyStateChange;
 
         RevertHud();
     }
 
-    private unsafe void RevertHud()
-    {
-        var addonPartyList = (AddonPartyList*) Service.GameGui.GetAddonByName("_PartyList");
-        if (addonPartyList == null)
-        {
-            return;
-        }
-
-        for (var i = 0; i < 8; i++) {
-            _view.RevertPartyMemberRoleByIndex(addonPartyList, i);
-        }
-
-        _displayingRoles = false;
-    }
-
     public void EnableUpdates(bool value)
     {
-        // Service.Log.Warning("EnableUpdates: Checking");
-        if (!value && _enabled) {
-            // Service.Log.Warning("EnableUpdates: Revert");
+        if (!value && _enabled && _hasModifiedNodes) {
+            Service.Log.Verbose("PartyListHUDUpdater: Reverting due to updates being disabled");
             RevertHud();
         }
 
-        // Service.Log.Warning($"EnableUpdates: Enable: {value}");
         _enabled = value;
     }
 
     private void OnTerritoryChanged(ushort id)
     {
-        Service.Log.Verbose("PartyListHUDUpdater Forcing update due to territory change");
+        Service.Log.Verbose("PartyListHUDUpdater: Forcing update due to territory change");
         UpdateHud();
     }
 
     private void OnEnterPvP()
     {
-        if (_displayingRoles) {
-            Service.Log.Verbose("PartyListHUDUpdater: reverting party list due to entering a PvP zone");
-            RevertHud();
-        }
+        Service.Log.Verbose("PartyListHUDUpdater: Reverting party list due to entering a PvP zone");
+        UpdateHud();
     }
 
     private void OnLeavePvP()
     {
-        Service.Log.Verbose("PartyListHUDUpdater: updating party list due to leaving a PvP zone");
+        Service.Log.Verbose("PartyListHUDUpdater: Updating party list due to leaving a PvP zone");
         UpdateHud();
     }
 
     private void OnConfigurationSave()
     {
-        if (_displayingRoles) {
-            Service.Log.Verbose("PartyListHUDUpdater: reverting party list before the update due to config change");
-            RevertHud();
-        }
-
-        Service.Log.Verbose("PartyListHUDUpdater forcing update due to changes in the config");
+        Service.Log.Verbose("PartyListHUDUpdater: Forcing update due to changes in the config");
         UpdateHud();
     }
 
     private void OnAssignedRolesUpdated()
     {
-        Service.Log.Verbose("PartyListHUDUpdater forcing update due to assignments update");
+        Service.Log.Verbose("PartyListHUDUpdater: Forcing update due to assignments update");
         UpdateHud();
     }
 
-    private void OnUpdate(IFramework framework)
+    private void OnPartyStateChange(PartyChangeType type)
     {
-        var inParty = Service.PartyList.Length != 0 || _configuration.TestingMode;
-
-        if (!inParty && _previousInParty) {
-            Service.Log.Verbose("No longer in party/testing mode, reverting/updating party list HUD changes");
-            RevertHud();
+        if (type == PartyChangeType.Order) {
+            Service.Log.Verbose($"PartyListHUDUpdater: Forcing update due to party state change ({type})");
             UpdateHud();
         }
+    }
 
-        _previousInParty = inParty;
-
-        if (_updateQueued) {
-            // Service.Log.Verbose("Running queued update");
-            _updateQueued = false;
-            UpdateHud();
-        }
+    private void RetryUpdate(IFramework framework)
+    {
+        UpdateHud();
     }
 
     private unsafe void UpdateHud()
     {
-        if (!_configuration.DisplayRoleInPartyList
-            || !_enabled
-            || Service.ClientState.IsPvP) {
+        if (!_configuration.DisplayRoleInPartyList || !_enabled || Service.ClientState.IsPvP) {
+            if (_hasModifiedNodes) {
+                Service.Log.Verbose("PartyListHUDUpdater: No longer displaying roles, reverting HUD changes");
+                RevertHud();
+            }
+
             return;
         }
 
-        var addonPartyList = (AddonPartyList*)Service.GameGui.GetAddonByName("_PartyList");
-        if (addonPartyList == null) {
+        var inParty = Plugin.PartyStateTracker.InParty || _configuration.TestingMode;
+        if (!inParty && _hasModifiedNodes) {
+            Service.Log.Verbose("PartyListHUDUpdater: No longer in party/testing mode, reverting HUD changes");
+            RevertHud();
             return;
         }
 
         var agentHud = AgentHUD.Instance();
         if (agentHud->PartyMemberCount == 0) {
-            _updateQueued = true;
+            if (!_updateQueued) {
+                Service.Log.Verbose("PartyListHUDUpdater: Update queued");
+                Service.Framework.Update += RetryUpdate;
+                _updateQueued = true;
+            }
+
             return;
         }
 
-        // Service.Log.Verbose($"Updating party list HUD. members = {Service.PartyList.Length}");
+        if (_updateQueued) {
+            Service.Log.Verbose("PartyListHUDUpdater: Update succeeded");
+            Service.Framework.Update -= RetryUpdate;
+            _updateQueued = false;
+        }
+
+        var addonPartyList = (AddonPartyList*)Service.GameGui.GetAddonByName("_PartyList");
+        if (addonPartyList == null) {
+            Service.Log.Warning("PartyListHUDUpdater: PartyList addon not visible during HUD update");
+            return;
+        }
 
         var roleSet = false;
         for (var i = 0; i < 8; i++) {
@@ -176,7 +166,19 @@ public sealed class PartyListHUDUpdater : IDisposable
             _view.RevertPartyMemberRoleByIndex(addonPartyList, i);
         }
 
-        _displayingRoles = roleSet;
+        _hasModifiedNodes = roleSet;
+    }
+
+    private unsafe void RevertHud()
+    {
+        var addonPartyList = (AddonPartyList*)Service.GameGui.GetAddonByName("_PartyList");
+        if (addonPartyList == null) return;
+
+        for (var i = 0; i < 8; i++) {
+            _view.RevertPartyMemberRoleByIndex(addonPartyList, i);
+        }
+
+        _hasModifiedNodes = false;
     }
 
     private static unsafe uint GetWorldId(HudPartyMember* hudPartyMember)
@@ -187,9 +189,10 @@ public sealed class PartyListHUDUpdater : IDisposable
         }
 
         if (hudPartyMember->ContentId > 0) {
-            foreach (var partyMember in Service.PartyList) {
-                if (hudPartyMember->ContentId == (ulong)partyMember.ContentId) {
-                    return partyMember.World.Id;
+            var gm = GroupManager.Instance();
+            foreach (var member in gm->PartyMembersSpan.PointerEnumerator()) {
+                if (hudPartyMember->ContentId == (ulong)member->ContentID) {
+                    return member->HomeWorld;
                 }
             }
         }
@@ -204,18 +207,30 @@ public sealed class PartyListHUDUpdater : IDisposable
         var agentHud = AgentHUD.Instance();
         Service.Log.Info($"Members (AgentHud) [{agentHud->PartyMemberCount}]:");
         for (var i = 0; i < agentHud->PartyMemberListSpan.Length; i++) {
-            var hudPartyMember = agentHud->PartyMemberListSpan[i];
-            if (hudPartyMember.Name != null) {
-                var name = MemoryHelper.ReadSeStringNullTerminated((nint)hudPartyMember.Name);
+            var member = agentHud->PartyMemberListSpan.GetPointer(i);
+            if (member->Name != null) {
+                var name = MemoryHelper.ReadSeStringNullTerminated((nint)member->Name);
                 Service.Log.Info(
-                    $"  [{i}] {name} -> 0x{(nint)hudPartyMember.Object:X} ({(hudPartyMember.Object != null ? hudPartyMember.Object->Character.HomeWorld : "?")}) {hudPartyMember.ContentId} {hudPartyMember.ObjectId}");
+                    $"  [{i}] {name} -> 0x{(nint)member->Object:X} ({(member->Object != null ? member->Object->Character.HomeWorld : "?")}) {member->ContentId} {member->ObjectId:X}");
             }
         }
 
         Service.Log.Info($"Members (PartyList) [{Service.PartyList.Length}]:");
         for (var i = 0; i < Service.PartyList.Length; i++) {
             var member = Service.PartyList[i];
-            Service.Log.Info($"  [{i}] {member?.Name.TextValue ?? "?"} ({member?.World.Id}) {member?.ContentId}");
+            Service.Log.Info(
+                $"  [{i}] {member?.Name.TextValue ?? "?"} ({member?.World.Id}) {member?.ContentId} [job={member?.ClassJob.Id}]");
+        }
+
+        var gm = GroupManager.Instance();
+        Service.Log.Info($"Members (GroupManager) [{gm->MemberCount}]:");
+        for (var i = 0; i < gm->PartyMembersSpan.Length; i++) {
+            var member = gm->PartyMembersSpan.GetPointer(i);
+            if (member->HomeWorld != 65535) {
+                var name = MemoryHelper.ReadSeStringNullTerminated((nint)member->Name);
+                Service.Log.Info(
+                    $"  [{i}] {name} -> 0x{(nint)member->ObjectID:X} ({member->HomeWorld}) {member->ContentID} [job={member->ClassJob}]");
+            }
         }
 
         var proxy = InfoProxyParty.Instance();
@@ -224,7 +239,7 @@ public sealed class PartyListHUDUpdater : IDisposable
         for (var i = 0; i < list.CharDataSpan.Length; i++) {
             var data = list.CharDataSpan[i];
             var name = MemoryHelper.ReadSeStringNullTerminated((nint)data.Name);
-            Service.Log.Info($"  [{i}] {name} ({data.HomeWorld}) {data.ContentId}");
+            Service.Log.Info($"  [{i}] {name} ({data.HomeWorld}) {data.ContentId} {data.Job}");
         }
     }
 }

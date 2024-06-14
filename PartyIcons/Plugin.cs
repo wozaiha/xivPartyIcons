@@ -10,6 +10,7 @@ namespace PartyIcons;
 
 public sealed class Plugin : IDalamudPlugin
 {
+    public static PartyStateTracker PartyStateTracker { get; private set; } = null!;
     public static PartyListHUDView PartyHudView { get; private set; } = null!;
     public static PartyListHUDUpdater PartyListHudUpdater { get; private set; } = null!;
     public static SettingsWindow SettingsWindow { get; private set; } = null!;
@@ -35,11 +36,12 @@ public sealed class Plugin : IDalamudPlugin
 
         SeStringUtils.Initialize();
 
+        PartyStateTracker = new PartyStateTracker();
         PartyHudView = new PartyListHUDView(PlayerStylesheet);
-        RoleTracker = new RoleTracker(Settings);
+        RoleTracker = new RoleTracker(Settings, PartyStateTracker);
         NameplateView = new NameplateView(RoleTracker, Settings, PlayerStylesheet);
         ChatNameUpdater = new ChatNameUpdater(RoleTracker, PlayerStylesheet);
-        PartyListHudUpdater = new PartyListHUDUpdater(PartyHudView, RoleTracker, Settings);
+        PartyListHudUpdater = new PartyListHUDUpdater(PartyHudView, RoleTracker, Settings, PartyStateTracker);
         ModeSetter = new ViewModeSetter(NameplateView, Settings, ChatNameUpdater, PartyListHudUpdater);
         NameplateUpdater = new NameplateUpdater(NameplateView);
         ContextMenu = new ContextMenu(RoleTracker, Settings, PlayerStylesheet);
@@ -47,6 +49,7 @@ public sealed class Plugin : IDalamudPlugin
 
         SettingsWindow.Initialize();
 
+        PartyStateTracker.Enable();
         PartyListHudUpdater.Enable();
         ModeSetter.Enable();
         RoleTracker.Enable();
@@ -56,6 +59,7 @@ public sealed class Plugin : IDalamudPlugin
 
     public void Dispose()
     {
+        PartyStateTracker.Dispose();
         PartyHudView.Dispose();
         PartyListHudUpdater.Dispose();
         ChatNameUpdater.Dispose();

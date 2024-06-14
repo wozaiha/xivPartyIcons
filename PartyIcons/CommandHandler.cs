@@ -45,8 +45,8 @@ public class CommandHandler : IDisposable
         }
         else if (arguments == "dbg state")
         {
-            Service.ChatGui.Print($"Current mode is {Plugin.NameplateView.PartyDisplay.Mode}, party count {Service.PartyList.Length}", Service.PluginInterface.InternalName, 45);
-            Service.ChatGui.Print(Plugin.RoleTracker.DebugDescription(), Service.PluginInterface.InternalName, 45);
+            Service.Log.Info($"Current mode is {Plugin.NameplateView.PartyDisplay.Mode}, party count {Service.PartyList.Length}", Service.PluginInterface.InternalName, 45);
+            Service.Log.Info(Plugin.RoleTracker.DebugDescription(), Service.PluginInterface.InternalName, 45);
         }
         else if (arguments == "dbg party")
         {
