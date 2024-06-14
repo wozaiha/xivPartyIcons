@@ -55,12 +55,17 @@ public sealed class PartyListHUDUpdater : IDisposable
 
     public void EnableUpdates(bool value)
     {
+        // Service.Log.Warning($"PartyListHUDUpdater: EnableUpdates({value})");
         if (!value && _enabled && _hasModifiedNodes) {
             Service.Log.Verbose("PartyListHUDUpdater: Reverting due to updates being disabled");
             RevertHud();
         }
 
-        _enabled = value;
+        if (value != _enabled) {
+            Service.Log.Verbose("PartyListHUDUpdater: Updating due to updates being enabled");
+            _enabled = value;
+            UpdateHud();
+        }
     }
 
     private void OnTerritoryChanged(ushort id)
@@ -114,13 +119,6 @@ public sealed class PartyListHUDUpdater : IDisposable
                 RevertHud();
             }
 
-            return;
-        }
-
-        var inParty = Plugin.PartyStateTracker.InParty || _configuration.TestingMode;
-        if (!inParty && _hasModifiedNodes) {
-            Service.Log.Verbose("PartyListHUDUpdater: No longer in party/testing mode, reverting HUD changes");
-            RevertHud();
             return;
         }
 
