@@ -4,7 +4,7 @@ using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 using PartyIcons.Entities;
 using PartyIcons.Stylesheet;
 
-namespace PartyIcons.Utils;
+namespace PartyIcons.View;
 
 public sealed unsafe class PartyListHUDView : IDisposable
 {

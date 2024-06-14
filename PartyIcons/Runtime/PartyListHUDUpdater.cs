@@ -7,6 +7,7 @@ using FFXIVClientStructs.FFXIV.Client.UI.Info;
 using FFXIVClientStructs.Interop;
 using PartyIcons.Configuration;
 using PartyIcons.Utils;
+using PartyIcons.View;
 
 namespace PartyIcons.Runtime;
 
