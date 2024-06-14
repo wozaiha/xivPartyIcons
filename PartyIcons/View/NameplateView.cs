@@ -78,9 +78,11 @@ public sealed class NameplateView : IDisposable
         }
         else {
             if (!partyDisplay.StatusSelectors.TryGetValue(zoneType, out var partyStatusSelector)) {
-                Service.Log.Warning($"Couldn't find status selector for zoneType {zoneType} in config {partyDisplay.Preset}/{partyDisplay.Id}");
+                Service.Log.Warning(
+                    $"Couldn't find status selector for zoneType {zoneType} in config {partyDisplay.Preset}/{partyDisplay.Id}");
                 partyStatusSelector = DefaultStatusSelector;
             }
+
             PartyStatus = StatusUtils.DictToArray(_configuration.GetStatusConfig(partyStatusSelector).DisplayMap);
         }
 
@@ -90,9 +92,11 @@ public sealed class NameplateView : IDisposable
         }
         else {
             if (!othersDisplay.StatusSelectors.TryGetValue(zoneType, out var othersStatusSelector)) {
-                Service.Log.Warning($"Couldn't find status selector for zoneType {zoneType} in config {othersDisplay.Preset}/{othersDisplay.Id}");
+                Service.Log.Warning(
+                    $"Couldn't find status selector for zoneType {zoneType} in config {othersDisplay.Preset}/{othersDisplay.Id}");
                 othersStatusSelector = DefaultStatusSelector;
             }
+
             OthersStatus = StatusUtils.DictToArray(_configuration.GetStatusConfig(othersStatusSelector).DisplayMap);
         }
     }
@@ -214,16 +218,26 @@ public sealed class NameplateView : IDisposable
             }
             case NameplateMode.SmallJobIconAndRole:
             {
-                var hasRole = _roleTracker.TryGetAssignedRole(context.PlayerCharacter, out var roleId);
-
-                if (hasRole) {
-                    var prefixString = new SeString()
-                        .Append(_stylesheet.GetRolePlate(roleId))
-                        .Append(" ");
-                    prefix = SeStringUtils.SeStringToPtr(prefixString);
+                prefix = SeStringUtils.EmptyPtr;
+                if (context.DisplayConfig.RoleDisplayStyle == RoleDisplayStyle.PartyNumber) {
+                    if (PartyListHUDView.GetPartySlotIndex(context.PlayerCharacter.ObjectId) is { } partySlot) {
+                        // var slotString = hasRole
+                        //     ? _stylesheet.GetPartySlotNumber(partySlot + 1, roleId)
+                        //     : _stylesheet.GetPartySlotNumber(partySlot + 1, context.GenericRole);
+                        var slotString = _stylesheet.GetPartySlotNumber(partySlot + 1, context.GenericRole);
+                        var prefixString = new SeString()
+                            .Append(slotString)
+                            .Append(" ");
+                        prefix = SeStringUtils.SeStringToPtr(prefixString);
+                    }
                 }
                 else {
-                    prefix = SeStringUtils.EmptyPtr;
+                    if (_roleTracker.TryGetAssignedRole(context.PlayerCharacter, out var roleId)) {
+                        var prefixString = new SeString()
+                            .Append(_stylesheet.GetRolePlate(roleId))
+                            .Append(" ");
+                        prefix = SeStringUtils.SeStringToPtr(prefixString);
+                    }
                 }
 
                 iconId = context.StatusIconId;
@@ -256,10 +270,18 @@ public sealed class NameplateView : IDisposable
             }
             case NameplateMode.RoleLetters:
             {
-                var hasRole = _roleTracker.TryGetAssignedRole(context.PlayerCharacter, out var roleId);
-                var nameString = hasRole
-                    ? _stylesheet.GetRolePlate(roleId)
-                    : _stylesheet.GetGenericRolePlate(context.GenericRole);
+                SeString nameString;
+                if (context.DisplayConfig.RoleDisplayStyle == RoleDisplayStyle.PartyNumber) {
+                    nameString = PartyListHUDView.GetPartySlotIndex(context.PlayerCharacter.ObjectId) is { } partySlot
+                        ? _stylesheet.GetPartySlotNumber(partySlot + 1, context.GenericRole)
+                        : _stylesheet.GetGenericRolePlate(context.GenericRole);
+                }
+                else {
+                    var hasRole = _roleTracker.TryGetAssignedRole(context.PlayerCharacter, out var roleId);
+                    nameString = hasRole
+                        ? _stylesheet.GetRolePlate(roleId)
+                        : _stylesheet.GetGenericRolePlate(context.GenericRole);
+                }
 
                 if (context.ShowExIcon) {
                     nameString.Payloads.Insert(0, new TextPayload(FullWidthSpace));

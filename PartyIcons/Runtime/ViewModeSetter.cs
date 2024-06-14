@@ -1,10 +1,8 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
 using Lumina.Excel;
 using Lumina.Excel.GeneratedSheets;
 using PartyIcons.Configuration;
-using PartyIcons.Utils;
 using PartyIcons.View;
 
 namespace PartyIcons.Runtime;
@@ -121,7 +119,9 @@ public sealed class ViewModeSetter
 
         _nameplateView.SetZoneType(ZoneType);
 
-        var enableHud = _nameplateView.PartyDisplay.Mode is NameplateMode.RoleLetters or NameplateMode.SmallJobIconAndRole;
+        var enableHud =
+            _nameplateView.PartyDisplay.Mode is NameplateMode.RoleLetters or NameplateMode.SmallJobIconAndRole &&
+            _nameplateView.PartyDisplay.RoleDisplayStyle == RoleDisplayStyle.Role;
         _partyListHudUpdater.EnableUpdates(enableHud);
 
         Service.Log.Verbose($"Setting modes: nameplates party {_nameplateView.PartyDisplay.Mode} others {_nameplateView.OthersDisplay.Mode}, chat {_chatNameUpdater.PartyMode}, update HUD {enableHud}");

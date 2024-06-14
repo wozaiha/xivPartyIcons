@@ -200,6 +200,9 @@ public sealed class PlayerStylesheet
     public SeString GetPartySlotNumber(uint number, GenericRole genericRole) =>
         SeStringUtils.Text(BoxedCharacterString(number.ToString()), GetGenericRoleColor(genericRole));
 
+    public SeString GetPartySlotNumber(uint number, RoleId role) =>
+        SeStringUtils.Text(BoxedCharacterString(number.ToString()), GetRoleColor(role));
+
     public SeString GetRoleChatPrefix(RoleId roleId) => GetRolePlate(roleId);
 
     public ushort GetRoleChatColor(RoleId roleId) => GetRoleColor(roleId);

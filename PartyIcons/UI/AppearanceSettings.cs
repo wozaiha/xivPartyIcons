@@ -133,6 +133,18 @@ public sealed class AppearanceSettings
             - 'Replace' will move the status icon into the job item slot, leaving the status icon empty
             """);
 
+        if (config.Mode is NameplateMode.SmallJobIconAndRole or NameplateMode.RoleLetters) {
+            using var combo = ImRaii.Combo("Role display style", UiNames.GetName(config.RoleDisplayStyle));
+            if (combo) {
+                foreach (var style in Enum.GetValues<RoleDisplayStyle>().Where(r => r != RoleDisplayStyle.None)) {
+                    if (ImGui.Selectable(UiNames.GetName(style), style == config.RoleDisplayStyle)) {
+                        config.RoleDisplayStyle = style;
+                        Plugin.Settings.Save();
+                    }
+                }
+            }
+        }
+
         ImGuiExt.Spacer(6);
         ImGui.TextDisabled("Job Icon");
         using (ImRaii.PushId("jobIcon")) {

@@ -95,4 +95,15 @@ public static class UiNames
 
         return GetName(config.Mode);
     }
+
+    public static string GetName(RoleDisplayStyle style)
+    {
+        return style switch
+        {
+            RoleDisplayStyle.None => "None",
+            RoleDisplayStyle.Role => "Role",
+            RoleDisplayStyle.PartyNumber => "Party Number",
+            _ => throw new ArgumentException($"Unknown RoleDisplayStyle {style}")
+        };
+    }
 }

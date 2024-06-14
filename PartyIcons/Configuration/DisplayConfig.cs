@@ -18,6 +18,7 @@ public class DisplayConfig
     public float Scale;
     public IconSetId IconSetId;
     public StatusSwapStyle SwapStyle;
+    public RoleDisplayStyle RoleDisplayStyle;
 
     [JsonConverter(typeof(EnumKeyConverter<ZoneType, StatusSelector>))]
     public Dictionary<ZoneType, StatusSelector> StatusSelectors = [];
@@ -62,6 +63,9 @@ public class DisplayConfig
             or NameplateMode.RoleLetters
             ? StatusSwapStyle.Swap
             : StatusSwapStyle.None;
+        RoleDisplayStyle = Mode is NameplateMode.SmallJobIconAndRole or NameplateMode.RoleLetters
+            ? RoleDisplayStyle.Role
+            : RoleDisplayStyle.None;
         StatusSelectors = [];
         ExIcon = new IconCustomizeConfig();
         SubIcon = new IconCustomizeConfig();
@@ -173,4 +177,11 @@ public enum StatusSwapStyle
     None,
     Swap,
     Replace
+}
+
+public enum RoleDisplayStyle
+{
+    None,
+    Role,
+    PartyNumber
 }
