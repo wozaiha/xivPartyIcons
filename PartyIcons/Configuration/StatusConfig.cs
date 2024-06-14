@@ -106,7 +106,7 @@ public class StatusConfig
                 Status.CameraMode,
             ],
             [
-                Status.Returner,
+                // Status.Returner,
                 Status.NewAdventurer,
             ]);
 
@@ -118,7 +118,7 @@ public class StatusConfig
                 Status.SharingDuty, // This allows you to see which players don't have a party (note: when?)
             ],
             [
-                Status.Returner,
+                // Status.Returner,
                 Status.NewAdventurer,
             ]);
 
