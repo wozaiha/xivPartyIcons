@@ -112,11 +112,9 @@ public sealed class NameplateUpdater : IDisposable
             return null;
         }
 
-        foreach (var obj in Service.ObjectTable) {
-            if (obj.ObjectId == objectId && obj is PlayerCharacter c) {
-                var job = ((Character*)c.Address)->CharacterData.ClassJob;
-                return job is < 1 or > JobConstants.MaxJob ? null : c;
-            }
+        if (Service.ObjectTable.SearchById(objectId) is PlayerCharacter c) {
+            var job = ((Character*)c.Address)->CharacterData.ClassJob;
+            return job is < 1 or > JobConstants.MaxJob ? null : c;
         }
 
         return null;
