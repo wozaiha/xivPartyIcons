@@ -9,7 +9,6 @@ using ImGuiNET;
 using PartyIcons.Configuration;
 using PartyIcons.Runtime;
 using PartyIcons.UI.Utils;
-using PartyIcons.Utils;
 using Action = System.Action;
 
 namespace PartyIcons.UI;
@@ -18,7 +17,7 @@ public sealed class AppearanceSettings
 {
     private NameplateMode _createMode = NameplateMode.SmallJobIcon;
 
-    public void DrawAppearanceSettings()
+    public void Draw()
     {
         ImGuiExt.Spacer(2);
 
@@ -71,7 +70,7 @@ public sealed class AppearanceSettings
         }
     }
 
-    private void DrawDisplayConfig(DisplayConfig config, ref List<Action> actions)
+    private static void DrawDisplayConfig(DisplayConfig config, ref List<Action> actions)
     {
         using var id = ImRaii.PushId($"display@{config.Preset}@{config.Id}");
 
@@ -188,7 +187,7 @@ public sealed class AppearanceSettings
         ImGuiExt.Spacer(3);
     }
 
-    private void DrawJobIcon(Func<IconCustomizeConfig> getter, Action<IconCustomizeConfig> setter)
+    private static void DrawJobIcon(Func<IconCustomizeConfig> getter, Action<IconCustomizeConfig> setter)
     {
         var icon = getter();
 
@@ -217,7 +216,7 @@ public sealed class AppearanceSettings
         ImGuiComponents.HelpMarker("Hold Control and click a slider to input an exact value");
     }
 
-    private void DrawStatusSelector(DisplayConfig config, ZoneType zoneType)
+    private static void DrawStatusSelector(DisplayConfig config, ZoneType zoneType)
     {
         var currentSelector = config.StatusSelectors[zoneType];
         ImGuiExt.SetComboWidth(Plugin.Settings.StatusConfigs.Selectors.Select(UiNames.GetName));

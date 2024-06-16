@@ -47,9 +47,13 @@ public static class UiNames
         };
     }
 
-    public static string GetName(DisplaySelector selector)
+    public static string GetName(StatusSelector selector)
     {
-        var config = Plugin.Settings.GetDisplayConfig(selector);
+        return GetName(Plugin.Settings.GetStatusConfig(selector));
+    }
+
+    public static string GetName(DisplayConfig config)
+    {
         if (config.Preset == DisplayPreset.Custom) {
             return $"{GetName(config.Mode)} ({config.Name})";
         }
@@ -57,9 +61,9 @@ public static class UiNames
         return GetName(config.Mode);
     }
 
-    public static string GetName(StatusSelector selector)
+    public static string GetName(DisplaySelector selector)
     {
-        return GetName(Plugin.Settings.GetStatusConfig(selector));
+        return GetName(Plugin.Settings.GetDisplayConfig(selector));
     }
 
     public static string GetName(IconSetId id)
@@ -85,15 +89,6 @@ public static class UiNames
             ChatMode.Job => "Job abbreviation",
             _ => throw new ArgumentException($"Unknown chat mode {mode}")
         };
-    }
-
-    public static string GetName(DisplayConfig config)
-    {
-        if (config.Preset == DisplayPreset.Custom) {
-            return $"{GetName(config.Mode)} ({config.Name})";
-        }
-
-        return GetName(config.Mode);
     }
 
     public static string GetName(RoleDisplayStyle style)

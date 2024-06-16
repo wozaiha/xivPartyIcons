@@ -12,7 +12,7 @@ namespace PartyIcons.Configuration;
 [Serializable]
 public class Settings : IPluginConfiguration
 {
-    public static int CurrentVersion = 2;
+    public const int CurrentVersion = 2;
 
     public int Version { get; set; } = CurrentVersion;
     public bool ImportedSelectors = false;
@@ -49,7 +49,7 @@ public class Settings : IPluginConfiguration
 
     public Dictionary<string, RoleId> StaticAssignments { get; set; } = new();
 
-    public event Action OnSave;
+    public event Action? OnSave;
 
     public Settings()
     {

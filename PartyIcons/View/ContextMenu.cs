@@ -149,7 +149,7 @@ public sealed class ContextMenu : IDisposable
             {
                 Name = $"Assign {roleName}",
                 Prefix = (SeIconChar)PlayerStylesheet.BoxedCharacter(roleName[0]),
-                PrefixColor = _stylesheet.GetRoleColor(role),
+                PrefixColor = PlayerStylesheet.GetRoleColor(role),
                 Priority = 101 + (int)role,
                 OnClicked = _ => { AssignRole(characterInfo.Name, characterInfo.World, role); }
             });

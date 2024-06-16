@@ -1,8 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Numerics;
-using Dalamud.Interface.Internal;
 using Dalamud.Interface.Utility.Raii;
-using Dalamud.Plugin.Services;
 using ImGuiNET;
 using Lumina.Excel.GeneratedSheets;
 using PartyIcons.Configuration;
@@ -26,7 +24,7 @@ public sealed class StatusSettings
         };
     }
 
-    public void DrawStatusSettings()
+    public void Draw()
     {
         ImGuiExt.Spacer(2);
 
@@ -60,7 +58,7 @@ public sealed class StatusSettings
         }
     }
 
-    private void DrawStatusConfig(StatusConfig config, ref List<Action> actions)
+    private static void DrawStatusConfig(StatusConfig config, ref List<Action> actions)
     {
         var textSize = ImGui.CalcTextSize("Important");
         var rowHeight = textSize.Y + ImGui.GetStyle().FramePadding.Y * 2;

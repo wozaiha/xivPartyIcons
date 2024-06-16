@@ -56,13 +56,10 @@ public static class ImGuiExt
     public static void SetComboWidth(IEnumerable<string> values)
     {
         const float paddingMultiplier = 1.05f;
-        float maxItemWidth = float.MinValue;
-
-        foreach (var text in values)
-        {
-            var itemWidth = ImGui.CalcTextSize(text).X + ImGui.GetStyle().ScrollbarSize * 3f;
-            maxItemWidth = Math.Max(maxItemWidth, itemWidth);
-        }
+        var maxItemWidth = values
+            .Select(text => ImGui.CalcTextSize(text).X + ImGui.GetStyle().ScrollbarSize * 3f)
+            .Append(50)
+            .Max();
 
         ImGui.SetNextItemWidth(maxItemWidth * paddingMultiplier);
     }
@@ -70,10 +67,7 @@ public static class ImGuiExt
     public static IDalamudTextureWrap? GetIconTexture(uint iconId)
     {
         var path = Service.TextureProvider.GetIconPath(iconId, ITextureProvider.IconFlags.None);
-        if (path == null)
-            return null;
-
-        return Service.TextureProvider.GetTextureFromGame(path);
+        return path == null ? null : Service.TextureProvider.GetTextureFromGame(path);
     }
 
     public static void DrawIconSetCombo(string label, bool showInherit, Func<IconSetId> getter, Action<IconSetId> setter)

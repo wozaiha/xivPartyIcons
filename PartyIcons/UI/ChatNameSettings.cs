@@ -4,7 +4,6 @@ using Dalamud.Interface.Utility.Raii;
 using ImGuiNET;
 using PartyIcons.Configuration;
 using PartyIcons.UI.Utils;
-using PartyIcons.Utils;
 
 namespace PartyIcons.UI;
 

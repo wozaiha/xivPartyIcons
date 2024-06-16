@@ -45,11 +45,12 @@ public static class SeStringUtils
         return seString;
     }
 
-    public static SeString Text(string text, ushort color)
+    // Defaults to glowColor 51 (black glow) for maximum contrast
+    public static SeString Text(string text, ushort fgColor, ushort glowColor = 51)
     {
         var seString = new SeString(new List<Payload>());
-        seString.Append(new UIGlowPayload(51)); // Black glow
-        seString.Append(new UIForegroundPayload(color));
+        seString.Append(new UIGlowPayload(glowColor));
+        seString.Append(new UIForegroundPayload(fgColor));
         seString.Append(new TextPayload(text));
         seString.Append(UIForegroundPayload.UIForegroundOff);
         seString.Append(UIGlowPayload.UIGlowOff);

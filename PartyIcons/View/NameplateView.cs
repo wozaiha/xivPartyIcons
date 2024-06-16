@@ -202,6 +202,7 @@ public sealed class NameplateView : IDisposable
 
         switch (mode) {
             case NameplateMode.Default:
+            default:
                 throw new Exception(
                     $"Illegal state, should not enter {nameof(ModifyParameters)} with mode {context.Mode}");
             case NameplateMode.Hide:
@@ -306,6 +307,7 @@ public sealed class NameplateView : IDisposable
         switch (context.Mode) {
             case NameplateMode.Default:
             case NameplateMode.Hide:
+            default:
                 throw new Exception($"Illegal state, should not enter {nameof(ModifyNodes)} with mode {context.Mode}");
 
             case NameplateMode.SmallJobIcon:

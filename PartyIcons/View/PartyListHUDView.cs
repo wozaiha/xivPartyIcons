@@ -80,6 +80,6 @@ public sealed unsafe class PartyListHUDView : IDisposable
 
         var numberNode = nameNode->AtkResNode.PrevSiblingNode->GetAsAtkTextNode();
         numberNode->AtkResNode.SetPositionShort(0, 0);
-        numberNode->SetText(_stylesheet.BoxedCharacterString((index + 1).ToString()));
+        numberNode->SetText(PlayerStylesheet.BoxedCharacterString((index + 1).ToString()));
     }
 }

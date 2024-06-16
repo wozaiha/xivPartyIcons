@@ -1,8 +1,6 @@
 ﻿using System;
 using System.Numerics;
 using ImGuiNET;
-using PartyIcons.Configuration;
-using PartyIcons.Runtime;
 using PartyIcons.UI.Utils;
 using PartyIcons.Utils;
 
@@ -82,7 +80,7 @@ public sealed class SettingsWindow : IDisposable
                 {
                     if (ImGui.BeginChild("##nameplates_content"))
                     {
-                        _nameplateSettings.DrawNameplateSettings();
+                        _nameplateSettings.Draw();
 
                         ImGui.EndChild();
                     }
@@ -106,7 +104,7 @@ public sealed class SettingsWindow : IDisposable
                 {
                     if (ImGui.BeginChild("##appearance_content"))
                     {
-                        _appearanceSettings.DrawAppearanceSettings();
+                        _appearanceSettings.Draw();
 
                         ImGui.EndChild();
                     }
@@ -118,7 +116,7 @@ public sealed class SettingsWindow : IDisposable
                 {
                     if (ImGui.BeginChild("##statuses_content"))
                     {
-                        _statusSettings.DrawStatusSettings();
+                        _statusSettings.Draw();
 
                         ImGui.EndChild();
                     }
@@ -184,6 +182,6 @@ public sealed class SettingsWindow : IDisposable
     private readonly StatusSettings _statusSettings = new();
     private readonly ChatNameSettings _chatNameSettings = new();
     private readonly StaticAssignmentsSettings _staticAssignmentsSettings = new();
-    
+
     private FlashingText _generalTabText = new();
 }

@@ -8,7 +8,6 @@ using Dalamud.Interface.Utility;
 using ImGuiNET;
 using PartyIcons.Entities;
 using PartyIcons.UI.Utils;
-using PartyIcons.Utils;
 
 namespace PartyIcons.UI;
 

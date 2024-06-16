@@ -28,12 +28,7 @@ public static class StatusUtils
         return iconId;
     }
 
-    public static List<OnlineStatus> ExcelStatus => _excelStatus ??= Service.DataManager.GameData.GetExcelSheet<OnlineStatus>()!.ToList();
-
-    public static Status ToStatus(this OnlineStatus onlineStatus)
-    {
-        return (Status)onlineStatus.RowId;
-    }
+    private static List<OnlineStatus> ExcelStatus => _excelStatus ??= Service.DataManager.GameData.GetExcelSheet<OnlineStatus>()!.ToList();
 
     private static readonly Status[] KnownStatuses = Enum.GetValues<Status>();
 
@@ -155,6 +150,11 @@ public static class StatusUtils
         }
 
         return dict;
+    }
+
+    public static Status ToStatus(this OnlineStatus onlineStatus)
+    {
+        return (Status)onlineStatus.RowId;
     }
 
     public static BitmapFontIcon OnlineStatusToBitmapIcon(Status status)

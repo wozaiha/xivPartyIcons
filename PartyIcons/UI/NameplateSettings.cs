@@ -4,18 +4,13 @@ using System.IO;
 using System.Linq;
 using System.Numerics;
 using System.Reflection;
-using System.Reflection.Emit;
 using Dalamud.Interface.Colors;
 using Dalamud.Interface.Components;
 using Dalamud.Interface.Internal;
 using Dalamud.Interface.Utility.Raii;
 using ImGuiNET;
 using PartyIcons.Configuration;
-using PartyIcons.Entities;
-using PartyIcons.Stylesheet;
 using PartyIcons.UI.Utils;
-using PartyIcons.Utils;
-using PartyIcons.View;
 
 namespace PartyIcons.UI;
 
@@ -50,7 +45,7 @@ public sealed class NameplateSettings
         }
     }
 
-    public void DrawNameplateSettings()
+    public void Draw()
     {
         ImGui.Dummy(new Vector2(0, 2f));
 
