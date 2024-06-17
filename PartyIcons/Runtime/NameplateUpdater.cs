@@ -10,6 +10,7 @@ using Dalamud.Game.Config;
 using Dalamud.Hooking;
 using Dalamud.Utility.Signatures;
 using FFXIVClientStructs.FFXIV.Client.Game.Character;
+using FFXIVClientStructs.FFXIV.Client.Game.Object;
 using FFXIVClientStructs.FFXIV.Client.UI;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using FFXIVClientStructs.Interop;
@@ -120,6 +121,26 @@ public sealed class NameplateUpdater : IDisposable
         return null;
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static unsafe Character* ResolveCharacter3D(uint objectId)
+    {
+        if (objectId == 0xE0000000) {
+            return null;
+        }
+
+        var ui3DModule = UIModule.Instance()->GetUI3DModule();
+        for (var i = 0; i < ui3DModule->NamePlateObjectInfoCount; i++) {
+            var objectInfo = ((UI3DModule.ObjectInfo**)ui3DModule->NamePlateObjectInfoPointerArray)[i];
+            var obj = objectInfo->GameObject;
+            if (obj->ObjectID == objectId && obj->ObjectKind == (int)ObjectKind.Pc) {
+                var character = (Character*)obj;
+                return character->CharacterData.ClassJob is < 1 or > JobConstants.MaxJob ? null : character;
+            }
+        }
+
+        return null;
+    }
+
     private unsafe void AddonNamePlateDrawDetour(AddonNamePlate* addon)
     {
         if (addon->NamePlateObjectArray == null)
@@ -132,7 +153,7 @@ public sealed class NameplateUpdater : IDisposable
             goto Original;
         }
 
-        if (_updaterState is UpdaterState.Initializing) {
+        if (_updaterState == UpdaterState.Initializing) {
             try {
                 if (CreateNodes(addon)) {
                     _updaterState = UpdaterState.Ready;
