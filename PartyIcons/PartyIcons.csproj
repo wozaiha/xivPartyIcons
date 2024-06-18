@@ -2,7 +2,7 @@
 
 <Project Sdk="Microsoft.NET.Sdk">
     <PropertyGroup>
-        <Authors>shdwp, abashby</Authors>
+        <Authors>shdwp, abashby, nebel</Authors>
         <Company>shdwp</Company>
         <Description>PartyIcons plugin</Description>
         <Copyright>shdwp 2021</Copyright>
