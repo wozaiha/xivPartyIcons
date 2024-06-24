@@ -261,7 +261,7 @@ public sealed class NameplateView : IDisposable
                     name = SeStringUtils.SeStringToPtr(slotString);
                 }
                 else {
-                    name = SeStringUtils.EmptyPtr;
+                    name = SeStringUtils.SeStringToPtr(SeStringUtils.Text(FullWidthSpace));
                 }
 
                 fcName = SeStringUtils.EmptyPtr;
