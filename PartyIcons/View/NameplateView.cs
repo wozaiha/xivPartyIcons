@@ -24,6 +24,7 @@ public sealed class NameplateView : IDisposable
     private const short ResNodeCenter = 144;
     private const short ResNodeBottom = 107;
 
+    private const short TextIconSize = 18;
     private const string FullWidthSpace = "　";
 
     internal DisplayConfig PartyDisplay { get; private set; } = null!;
@@ -388,12 +389,6 @@ public sealed class NameplateView : IDisposable
         const short yAdjust = -13;
         const float iconScale = 1.55f;
 
-        var xAdjust2 = xAdjust;
-        if (state.NamePlateObject->TextW > 50) {
-            // Name is 3-wide including spacer, subtract an extra 1f scaled half-character width (+1 as a slight adjustment)
-            xAdjust2 -= 19;
-        }
-
         var iconConfig = context.DisplayConfig.ExIcon;
 
         var iconGroup = context.JobIconGroup;
@@ -405,8 +400,10 @@ public sealed class NameplateView : IDisposable
 
         var scale = iconGroup.Scale * iconScale * iconConfig.Scale;
         exNode->AtkResNode.SetScale(scale, scale);
+
+        var iconTextWidthAdjust = TextIconSize - Math.Max(0, state.NamePlateObject->TextW / TextIconSize - 1) * TextIconSize;
         exNode->AtkResNode.SetPositionFloat(
-            ResNodeCenter - ExIconWidth + iconPaddingRight + xAdjust2 + iconConfig.OffsetX,
+            ResNodeCenter - ExIconWidth + iconPaddingRight + iconTextWidthAdjust + xAdjust + iconConfig.OffsetX,
             ResNodeBottom - ExIconHeight + yAdjust + iconConfig.OffsetY);
 
         exNode->LoadIconTexture((int)context.JobIconId, 0);
@@ -424,11 +421,17 @@ public sealed class NameplateView : IDisposable
             var subIconPaddingLeft = subIconGroup.Padding.Left;
             var subIconPaddingBottom = subIconGroup.Padding.Bottom;
 
+            var textW = state.NamePlateObject->TextW;
+            if (state.NamePlateObject->TextW == 0) {
+                // There is no text, so treat the icon (which presumably does exist...) as text.
+                textW += TextIconSize;
+            }
+
             subNode->AtkResNode.OriginX = 0 + subIconPaddingLeft;
             subNode->AtkResNode.OriginY = ExIconHeight - subIconPaddingBottom;
             subNode->AtkResNode.SetScale(subScale, subScale);
             subNode->AtkResNode.SetPositionFloat(
-                ResNodeCenter + state.NamePlateObject->TextW - subIconPaddingLeft + subXAdjust + subIconConfig.OffsetX,
+                ResNodeCenter + textW - subIconPaddingLeft + subXAdjust + subIconConfig.OffsetX,
                 ResNodeBottom - ExIconHeight + subIconPaddingBottom + subYAdjust + subIconConfig.OffsetY
             );
             subNode->LoadIconTexture((int)context.StatusIconId, 0);
