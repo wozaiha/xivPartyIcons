@@ -53,9 +53,6 @@ public sealed class ViewModeSetter
 
     public void ForceRefresh()
     {
-        // _nameplateView.OthersMode = _configuration.NameplateOthers;
-        // _chatNameUpdater.OthersMode = _configuration.ChatOthers;
-
         OnTerritoryChanged(0);
     }
 
