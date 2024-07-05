@@ -2,6 +2,7 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using FFXIVClientStructs.FFXIV.Client.System.Memory;
+using FFXIVClientStructs.FFXIV.Common.Component.BGCollision;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 
 namespace PartyIcons.Utils;
@@ -44,12 +45,11 @@ public static class AtkHelper
         return imageNode;
     }
 
-    public static unsafe void LinkNodeAfterTargetNode(AtkResNode* node, AtkComponentNode* parent,
-        AtkResNode* targetNode)
+    public static unsafe void LinkNodeAfterTargetNode(AtkResNode* node, AtkComponentNode* parentComponent, AtkResNode* targetNode)
     {
         if (targetNode->PrevSiblingNode == null) {
             throw new Exception(
-                $"LinkNodeAfterTargetNode: Failed to link 0x{(nint)node:X} (parent 0x{(nint)parent:X}, target 0x{(nint)targetNode:X} since PrevSiblingNode was null");
+                $"LinkNodeAfterTargetNode: Failed to link 0x{(nint)node:X} (parent 0x{(nint)parentComponent:X}, target 0x{(nint)targetNode:X} since PrevSiblingNode was null");
         }
 
         var prevSiblingNode = targetNode->PrevSiblingNode;
@@ -58,15 +58,35 @@ public static class AtkHelper
         prevSiblingNode->NextSiblingNode = node;
         node->PrevSiblingNode = prevSiblingNode;
         node->NextSiblingNode = targetNode;
-        parent->Component->UldManager.UpdateDrawNodeList();
+        parentComponent->Component->UldManager.UpdateDrawNodeList();
+    }
+
+    public static unsafe void LinkNodeAtEnd(AtkResNode* intruder, AtkComponentNode* parentComponent, AtkResNode* parentNode)
+    {
+        var node = parentNode->ChildNode;
+        if (node != null) {
+            while (node->PrevSiblingNode != null) node = node->PrevSiblingNode;
+        }
+
+        node->PrevSiblingNode = intruder;
+        intruder->NextSiblingNode = node;
+        intruder->ParentNode = node->ParentNode;
+
+        if (intruder->ParentNode->NextSiblingNode == intruder->NextSiblingNode) {
+            intruder->ParentNode->NextSiblingNode = intruder;
+        }
+
+        parentComponent->Component->UldManager.UpdateDrawNodeList();
     }
 
     public static unsafe void UnlinkAndFreeImageNodeIndirect(AtkImageNode* node, AtkUldManager* uldManager)
     {
-        if ((IntPtr)node->AtkResNode.PrevSiblingNode != IntPtr.Zero)
-            node->AtkResNode.PrevSiblingNode->NextSiblingNode = node->AtkResNode.NextSiblingNode;
-        if ((IntPtr)node->AtkResNode.NextSiblingNode != IntPtr.Zero)
-            node->AtkResNode.NextSiblingNode->PrevSiblingNode = node->AtkResNode.PrevSiblingNode;
+        if ((IntPtr)node->ParentNode->NextSiblingNode == (IntPtr)node)
+            node->ParentNode->NextSiblingNode = node->NextSiblingNode;
+        if ((IntPtr)node->PrevSiblingNode != IntPtr.Zero)
+            node->PrevSiblingNode->NextSiblingNode = node->NextSiblingNode;
+        if ((IntPtr)node->NextSiblingNode != IntPtr.Zero)
+            node->NextSiblingNode->PrevSiblingNode = node->PrevSiblingNode;
         uldManager->UpdateDrawNodeList();
         FreePartsList(node->PartsList);
         FreeImageNode(node);
@@ -78,10 +98,10 @@ public static class AtkHelper
         imageNode = IMemorySpace.GetUISpace()->Create<AtkImageNode>();
         if ((IntPtr)imageNode == IntPtr.Zero)
             return false;
-        imageNode->AtkResNode.Type = NodeType.Image;
-        imageNode->AtkResNode.NodeID = id;
-        imageNode->AtkResNode.NodeFlags = resNodeFlags;
-        imageNode->AtkResNode.DrawFlags = resNodeDrawFlags;
+        imageNode->Type = NodeType.Image;
+        imageNode->NodeId = id;
+        imageNode->NodeFlags = resNodeFlags;
+        imageNode->DrawFlags = resNodeDrawFlags;
         imageNode->WrapMode = wrapMode;
         imageNode->Flags = imageNodeFlags;
         return true;
@@ -151,7 +171,7 @@ public static class AtkHelper
 
     private static unsafe void FreeImageNode(AtkImageNode* node)
     {
-        node->AtkResNode.Destroy(false);
+        node->Destroy(false);
         IMemorySpace.Free(node, (ulong)sizeof(AtkImageNode));
     }
 
@@ -186,7 +206,7 @@ public static class AtkHelper
             return null;
         for (var index = 0; index < uldManager->NodeListCount; ++index) {
             var nodeById = uldManager->NodeList[index];
-            if ((IntPtr)nodeById != IntPtr.Zero && (int)nodeById->NodeID == (int)nodeId &&
+            if ((IntPtr)nodeById != IntPtr.Zero && (int)nodeById->NodeId == (int)nodeId &&
                 (!type.HasValue || nodeById->Type == type.Value))
                 return (T*)nodeById;
         }
