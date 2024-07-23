@@ -8,22 +8,15 @@ using System;
 using System.Diagnostics;
 using System.Net.Http;
 using System.Numerics;
-using System.Text.RegularExpressions;
 
-namespace PartyIcons.UI;
+namespace PartyIcons.UI.Settings;
 
-public sealed class GeneralSettings
+public sealed class GeneralTab
 {
     private readonly Notice _notice = new();
+    private readonly FlashingText _flashingText = new();
 
-    public void Initialize()
-    {
-        _notice.Initialize();
-    }
-
-    private FlashingText _testingModeText = new();
-    
-    public void DrawGeneralSettings()
+    public void Draw()
     {
         ImGui.Dummy(new Vector2(0, 2f));
 
@@ -41,22 +34,20 @@ public sealed class GeneralSettings
         }
 
         var testingMode = Plugin.Settings.TestingMode;
-        if (ImGui.Checkbox("##testingMode", ref testingMode))
-        {
+        if (ImGui.Checkbox("##testingMode", ref testingMode)) {
             Plugin.Settings.TestingMode = testingMode;
             Plugin.Settings.Save();
         }
 
         ImGui.SameLine();
-        _testingModeText.IsFlashing = Plugin.Settings.TestingMode;
-        _testingModeText.Draw(() => ImGui.Text("Enable testing mode"));
-        // ImGui.Text("Enable testing mode");
+        using (_flashingText.PushColor(Plugin.Settings.TestingMode)) {
+            ImGui.Text("Enable testing mode");
+        }
         ImGuiComponents.HelpMarker("Applies settings to any player, contrary to only the ones that are in the party.");
 
         var chatContentMessage = Plugin.Settings.ChatContentMessage;
 
-        if (ImGui.Checkbox("##chatmessage", ref chatContentMessage))
-        {
+        if (ImGui.Checkbox("##chatmessage", ref chatContentMessage)) {
             Plugin.Settings.ChatContentMessage = chatContentMessage;
             Plugin.Settings.Save();
         }
@@ -67,7 +58,7 @@ public sealed class GeneralSettings
 
         ImGuiExt.Spacer(10);
         if (ImGuiExt.ButtonEnabledWhen(ImGui.GetIO().KeyCtrl, "Show upgrade guide again")) {
-            UpgradeGuideSettings.ForceRedisplay = true;
+            UpgradeGuideTab.ForceRedisplay = true;
         }
         ImGuiExt.HoverTooltip("Hold Control to allow clicking");
 
@@ -77,77 +68,62 @@ public sealed class GeneralSettings
 
 public sealed class Notice
 {
-    public Notice()
-    {
-        _httpClient = new HttpClient();
-    }
+    private string? _noticeString;
+    private string? _noticeUrl;
 
-    private HttpClient _httpClient;
-    
-    public void Initialize()
+    public Notice()
     {
         DownloadAndParseNotice();
     }
-        
-    private string? _noticeString;
-    private string? _noticeUrl;
-    
+
     private void DownloadAndParseNotice()
     {
-        try
-        {
-            var stringAsync = _httpClient.GetStringAsync("https://shdwp.github.io/ukraine/xiv_notice.txt");
-            stringAsync.Wait();
-            var strArray = stringAsync.Result.Split('|');
+        using var httpClient = new HttpClient();
+        try {
+            var strArray = httpClient.GetStringAsync("https://shdwp.github.io/ukraine/xiv_notice.txt").Result.Split('|');
 
-            if ((uint) strArray.Length > 0U)
-            {
-                _noticeString = Regex.Replace(strArray[0], "\n", "\n\n");
+            if (strArray.Length > 0) {
+                _noticeString = strArray[0].Replace("\n", "\n\n");
             }
 
-            if (strArray.Length <= 1)
-            {
+            if (strArray.Length < 2) {
                 return;
             }
 
             _noticeUrl = strArray[1];
 
-            if (!(_noticeUrl.StartsWith("http://") || _noticeUrl.StartsWith("https://")))
-            {
+            if (!(_noticeUrl.StartsWith("http://") || _noticeUrl.StartsWith("https://"))) {
                 Service.Log.Warning($"Received invalid noticeUrl {_noticeUrl}, ignoring");
                 _noticeUrl = null;
             }
         }
-        catch (Exception ex) { }
+        catch (Exception) {
+            // ignored
+        }
     }
 
     public void DisplayNotice()
     {
         if (_noticeString == null)
-        {
             return;
-        }
 
         ImGui.Dummy(new Vector2(0.0f, 15f));
-        ImGui.PushStyleColor((ImGuiCol) 0, ImGuiColors.DPSRed);
+
+        using var col = ImRaii.PushColor(ImGuiCol.Text, ImGuiColors.DPSRed);
+
         ImGuiHelpers.SafeTextWrapped(_noticeString);
 
-        if (_noticeUrl != null)
-        {
-            if (ImGui.Button(_noticeUrl))
-            {
-                try
+        if (_noticeUrl != null && ImGui.Button(_noticeUrl)) {
+            try {
+                Process.Start(new ProcessStartInfo
                 {
-                    Process.Start(new ProcessStartInfo
-                    {
-                        FileName = _noticeUrl,
-                        UseShellExecute = true
-                    });
-                }
-                catch (Exception ex) { }
+                    FileName = _noticeUrl,
+                    UseShellExecute = true
+                });
+            }
+            catch (Exception) {
+                // ignored
             }
         }
-
-        ImGui.PopStyleColor();
     }
 }

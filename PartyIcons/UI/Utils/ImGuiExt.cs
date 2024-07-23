@@ -108,4 +108,23 @@ public static class ImGuiExt
             }
         }
     }
+
+    public static void ImGuiHelpTooltip(string tooltip, bool experimental = false)
+    {
+        ImGui.SameLine();
+
+        if (experimental)
+        {
+            ImGui.TextColored(new Vector4(0.8f, 0.0f, 0.0f, 1f), "!");
+        }
+        else
+        {
+            ImGui.TextColored(new Vector4(0.8f, 0.8f, 0.8f, 1f), "?");
+        }
+
+        if (ImGui.IsItemHovered())
+        {
+            ImGui.SetTooltip(tooltip);
+        }
+    }
 }

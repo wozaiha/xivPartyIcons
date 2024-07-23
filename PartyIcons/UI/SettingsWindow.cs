@@ -1,177 +1,79 @@
-﻿using System;
-using System.Numerics;
+﻿using Dalamud.Interface.Utility.Raii;
+using Dalamud.Interface.Windowing;
 using ImGuiNET;
+using PartyIcons.UI.Settings;
 using PartyIcons.UI.Utils;
-using PartyIcons.Utils;
+using System.Numerics;
 
 namespace PartyIcons.UI;
 
-public sealed class SettingsWindow : IDisposable
+public sealed class SettingsWindow : Window
 {
-    public bool SettingsVisible
-    {
-        get => _settingsVisible;
-        set
-        {
-            _settingsVisible = value;
+    private readonly GeneralTab _generalTab = new();
+    private readonly NameplateTab _nameplateTab = new();
+    private readonly AppearanceTab _appearanceTab = new();
+    private readonly StaticAssignmentsTab _staticAssignmentsTab = new();
 
-            if (value)
-            {
-                _windowSizeHelper.ForceSize();
-            }
-        }
-    }
+    private readonly FlashingText _flashingText = new();
 
-    public void Initialize()
+    public SettingsWindow() : base("PartyIcons")
     {
-        Service.PluginInterface.UiBuilder.Draw += DrawSettingsWindow;
-        Service.PluginInterface.UiBuilder.OpenConfigUi += OpenSettingsWindow;
-        
-        _generalSettings.Initialize();
-        _nameplateSettings.Initialize();
+        Size = new Vector2(450, 600);
+        SizeCondition = ImGuiCond.FirstUseEver;
+
+        SizeConstraints = new WindowSizeConstraints {
+            MinimumSize = new Vector2(450, 350),
+            MaximumSize = new Vector2(float.MaxValue, float.MaxValue)
+        };
     }
 
-    public void Dispose()
+    public override void Draw()
     {
-        Service.PluginInterface.UiBuilder.Draw -= DrawSettingsWindow;
-        Service.PluginInterface.UiBuilder.OpenConfigUi -= OpenSettingsWindow;
-    }
-
-    public void OpenSettingsWindow()
-    {
-        SettingsVisible = true;
-    }
-    
-    public void ToggleSettingsWindow()
-    {
-        SettingsVisible = !SettingsVisible;
-    }
-    
-    public void DrawSettingsWindow()
-    {
-        if (!SettingsVisible)
-        {
+        if (!Plugin.Settings.SelectorsDialogComplete || UpgradeGuideTab.ForceRedisplay) {
+            UpgradeGuideTab.Draw();
             return;
         }
 
-        _windowSizeHelper.SetWindowSize();
-
-        if (ImGui.Begin("PartyIcons", ref _settingsVisible))
-        {
-            _windowSizeHelper.CheckWindowSize();
-
-            if (!Plugin.Settings.SelectorsDialogComplete || UpgradeGuideSettings.ForceRedisplay) {
-                UpgradeGuideSettings.Draw();
+        using var tabBar = ImRaii.TabBar("##tabbar");
+        if (tabBar) {
+            var text = _flashingText.PushColor(Plugin.Settings.TestingMode);
+            using (var tab = ImRaii.TabItem("General")) {
+                text.Dispose();
+                if (tab) {
+                    using var contents = ImRaii.Child("##general_content");
+                    _generalTab.Draw();
+                }
             }
-            else if (ImGui.BeginTabBar("##tabbar"))
-            {
-                _generalTabText.IsFlashing = Plugin.Settings.TestingMode;
-                
-                if (_generalTabText.Draw(() => ImGui.BeginTabItem("General##general")))
-                {
-                    if (ImGui.BeginChild("##general_content"))
-                    {
-                        _generalSettings.DrawGeneralSettings();
-                        
-                        ImGui.EndChild();
-                    }
-                    
-                    ImGui.EndTabItem();
+            using (var tab = ImRaii.TabItem("Nameplates")) {
+                if (tab) {
+                    using var contents = ImRaii.Child("##nameplates_content");
+                    _nameplateTab.Draw();
                 }
-
-                if (ImGui.BeginTabItem("Nameplates"))
-                {
-                    if (ImGui.BeginChild("##nameplates_content"))
-                    {
-                        _nameplateSettings.Draw();
-
-                        ImGui.EndChild();
-                    }
-
-                    ImGui.EndTabItem();
+            }
+            using (var tab = ImRaii.TabItem("Appearance")) {
+                if (tab) {
+                    using var contents = ImRaii.Child("##appearance_content");
+                    _appearanceTab.Draw();
                 }
-                
-                if (ImGui.BeginTabItem("Appearance"))
-                {
-                    if (ImGui.BeginChild("##appearance_content"))
-                    {
-                        _appearanceSettings.Draw();
-
-                        ImGui.EndChild();
-                    }
-
-                    ImGui.EndTabItem();
+            }
+            using (var tab = ImRaii.TabItem("Status Icons")) {
+                if (tab) {
+                    using var contents = ImRaii.Child("##statuses_content");
+                    StatusTab.Draw();
                 }
-
-                if (ImGui.BeginTabItem("Status Icons"))
-                {
-                    if (ImGui.BeginChild("##statuses_content"))
-                    {
-                        StatusSettings.Draw();
-
-                        ImGui.EndChild();
-                    }
-
-                    ImGui.EndTabItem();
+            }
+            using (var tab = ImRaii.TabItem("Chat Names")) {
+                if (tab) {
+                    using var contents = ImRaii.Child("##chat_names_content");
+                    ChatNameTab.Draw();
                 }
-
-                if (ImGui.BeginTabItem("Chat Names"))
-                {
-                    if (ImGui.BeginChild("##chat_names_content"))
-                    {
-                        _chatNameSettings.DrawChatNameSettings();
-                        
-                        ImGui.EndChild();
-                    }
-                    
-                    ImGui.EndTabItem();
+            }
+            using (var tab = ImRaii.TabItem("Roles")) {
+                if (tab) {
+                    using var contents = ImRaii.Child("##static_assignments_content");
+                    _staticAssignmentsTab.Draw();
                 }
-
-                if (ImGui.BeginTabItem("Roles##static_assignments"))
-                {
-                    if (ImGui.BeginChild("##static_assignments_content"))
-                    {
-                        _staticAssignmentsSettings.DrawStaticAssignmentsSettings();
-                        
-                        ImGui.EndChild();
-                    }
-                    
-                    ImGui.EndTabItem();
-                }
-                
-                ImGui.EndTabBar();
             }
         }
-
-        ImGui.End();
     }
-
-    public static void ImGuiHelpTooltip(string tooltip, bool experimental = false)
-    {
-        ImGui.SameLine();
-
-        if (experimental)
-        {
-            ImGui.TextColored(new Vector4(0.8f, 0.0f, 0.0f, 1f), "!");
-        }
-        else
-        {
-            ImGui.TextColored(new Vector4(0.8f, 0.8f, 0.8f, 1f), "?");
-        }
-
-        if (ImGui.IsItemHovered())
-        {
-            ImGui.SetTooltip(tooltip);
-        }
-    }
-    
-    private bool _settingsVisible = false;
-    private static WindowSizeHelper _windowSizeHelper = new();
-    private readonly GeneralSettings _generalSettings = new();
-    private readonly NameplateSettings _nameplateSettings = new();
-    private readonly AppearanceSettings _appearanceSettings = new();
-    private readonly ChatNameSettings _chatNameSettings = new();
-    private readonly StaticAssignmentsSettings _staticAssignmentsSettings = new();
-
-    private FlashingText _generalTabText = new();
 }

@@ -28,7 +28,7 @@ public class CommandHandler : IDisposable
 
         if (arguments == "" || arguments == "config")
         {
-            Plugin.SettingsWindow.ToggleSettingsWindow();
+            Plugin.WindowManager.ToggleSettings();
         }
         else if (arguments == "reset" || arguments == "r")
         {

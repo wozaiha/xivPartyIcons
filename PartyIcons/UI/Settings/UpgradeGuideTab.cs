@@ -8,9 +8,9 @@ using PartyIcons.UI.Utils;
 using System.Linq;
 using System.Numerics;
 
-namespace PartyIcons.UI;
+namespace PartyIcons.UI.Settings;
 
-public static class UpgradeGuideSettings
+public static class UpgradeGuideTab
 {
     public static bool ForceRedisplay { get; set; }
 
@@ -38,7 +38,7 @@ public static class UpgradeGuideSettings
             UseNewDefaults();
         }
         ImGui.SameLine();
-        ImGui.TextWrapped("In duties, certain important statuses are swapped displayed in place of the job icon, but otherwise mostly hidden. In the overworld, most statuses are displayed in their own status icon slot.");
+        ImGui.TextWrapped("In duties, certain important statuses are swapped with the job icon, but otherwise mostly hidden. In the overworld, most statuses are displayed in their own status icon slot.");
         ImGui.Separator();
 
         if (ImGui.Button("Replicate the\n  old priority\n      system", buttonSize)) {

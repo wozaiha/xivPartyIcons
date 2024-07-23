@@ -1,9 +1,9 @@
-﻿using Dalamud.Plugin;
+﻿using Dalamud.Interface.Windowing;
+using Dalamud.Plugin;
 using PartyIcons.Configuration;
 using PartyIcons.Runtime;
 using PartyIcons.Stylesheet;
 using PartyIcons.UI;
-using PartyIcons.Utils;
 using PartyIcons.View;
 
 namespace PartyIcons;
@@ -13,7 +13,6 @@ public sealed class Plugin : IDalamudPlugin
     public static PartyStateTracker PartyStateTracker { get; private set; } = null!;
     public static PartyListHUDView PartyHudView { get; private set; } = null!;
     public static PartyListHUDUpdater PartyListHudUpdater { get; private set; } = null!;
-    public static SettingsWindow SettingsWindow { get; private set; } = null!;
     public static NameplateUpdater NameplateUpdater { get; private set; } = null!;
     public static NameplateView NameplateView { get; private set; } = null!;
     public static RoleTracker RoleTracker { get; private set; } = null!;
@@ -23,6 +22,7 @@ public sealed class Plugin : IDalamudPlugin
     public static CommandHandler CommandHandler { get; private set; } = null!;
     public static Settings Settings { get; private set; } = null!;
     public static PlayerStylesheet PlayerStylesheet { get; private set; } = null!;
+    public static WindowManager WindowManager { get; private set; } = null!;
 
     public Plugin(IDalamudPluginInterface pluginInterface)
     {
@@ -31,8 +31,6 @@ public sealed class Plugin : IDalamudPlugin
         Settings = Settings.Load();
 
         PlayerStylesheet = new PlayerStylesheet(Settings);
-
-        SettingsWindow = new SettingsWindow();
 
         PartyStateTracker = new PartyStateTracker();
         PartyHudView = new PartyListHUDView(PlayerStylesheet);
@@ -44,8 +42,7 @@ public sealed class Plugin : IDalamudPlugin
         NameplateUpdater = new NameplateUpdater(NameplateView);
         ContextMenu = new ContextMenu(RoleTracker, Settings, PlayerStylesheet);
         CommandHandler = new CommandHandler();
-
-        SettingsWindow.Initialize();
+        WindowManager = new WindowManager();
 
         PartyStateTracker.Enable();
         PartyListHudUpdater.Enable();
@@ -65,7 +62,7 @@ public sealed class Plugin : IDalamudPlugin
         NameplateUpdater.Dispose();
         RoleTracker.Dispose();
         ModeSetter.Dispose();
-        SettingsWindow.Dispose();
         CommandHandler.Dispose();
+        WindowManager.Dispose();
     }
 }

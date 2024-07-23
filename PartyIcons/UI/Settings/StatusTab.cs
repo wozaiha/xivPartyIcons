@@ -1,17 +1,17 @@
-﻿using System.Collections.Generic;
-using System.Numerics;
-using Dalamud.Interface.Utility.Raii;
+﻿using Dalamud.Interface.Utility.Raii;
 using ImGuiNET;
 using Lumina.Excel.GeneratedSheets;
 using PartyIcons.Configuration;
 using PartyIcons.UI.Utils;
 using PartyIcons.Utils;
+using System.Collections.Generic;
+using System.Numerics;
 using Action = System.Action;
 using Status = PartyIcons.Entities.Status;
 
-namespace PartyIcons.UI;
+namespace PartyIcons.UI.Settings;
 
-public sealed class StatusSettings
+public static class StatusTab
 {
     private static StatusVisibility ToggleStatusDisplay(StatusVisibility visibility)
     {

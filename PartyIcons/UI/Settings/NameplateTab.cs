@@ -1,25 +1,23 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Numerics;
-using System.Reflection;
-using Dalamud.Interface.Colors;
+﻿using Dalamud.Interface.Colors;
 using Dalamud.Interface.Components;
-using Dalamud.Interface.Internal;
 using Dalamud.Interface.Textures.TextureWraps;
 using Dalamud.Interface.Utility.Raii;
 using ImGuiNET;
 using PartyIcons.Configuration;
 using PartyIcons.UI.Utils;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Numerics;
+using System.Reflection;
 
-namespace PartyIcons.UI;
+namespace PartyIcons.UI.Settings;
 
-public sealed class NameplateSettings
+public sealed class NameplateTab
 {
     private readonly Dictionary<NameplateMode, IDalamudTextureWrap> _nameplateExamples = new();
 
-    public void Initialize()
+    public NameplateTab()
     {
         var assembly = Assembly.GetExecutingAssembly();
         var examplesImageNames = new Dictionary<NameplateMode, string>

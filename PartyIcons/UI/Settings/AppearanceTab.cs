@@ -1,19 +1,19 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Numerics;
-using Dalamud.Interface.Colors;
+﻿using Dalamud.Interface.Colors;
 using Dalamud.Interface.Components;
 using Dalamud.Interface.Utility.Raii;
 using ImGuiNET;
 using PartyIcons.Configuration;
 using PartyIcons.Runtime;
 using PartyIcons.UI.Utils;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Numerics;
 using Action = System.Action;
 
-namespace PartyIcons.UI;
+namespace PartyIcons.UI.Settings;
 
-public sealed class AppearanceSettings
+public sealed class AppearanceTab
 {
     private NameplateMode _createMode = NameplateMode.SmallJobIcon;
 

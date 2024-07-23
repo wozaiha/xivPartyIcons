@@ -1,15 +1,15 @@
-using System;
-using System.Linq;
 using Dalamud.Interface.Utility.Raii;
 using ImGuiNET;
 using PartyIcons.Configuration;
 using PartyIcons.UI.Utils;
+using System;
+using System.Linq;
 
-namespace PartyIcons.UI;
+namespace PartyIcons.UI.Settings;
 
-public sealed class ChatNameSettings
+public static class ChatNameTab
 {
-    public void DrawChatNameSettings()
+    public static void Draw()
     {
         ImGuiExt.Spacer(2);
 

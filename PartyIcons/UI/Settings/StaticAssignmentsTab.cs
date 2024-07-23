@@ -1,19 +1,22 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Numerics;
 using Dalamud.Interface.Colors;
 using Dalamud.Interface.Components;
 using Dalamud.Interface.Utility;
 using ImGuiNET;
 using PartyIcons.Entities;
 using PartyIcons.UI.Utils;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Numerics;
 
-namespace PartyIcons.UI;
+namespace PartyIcons.UI.Settings;
 
-public sealed class StaticAssignmentsSettings
+public sealed class StaticAssignmentsTab
 {
-    public void DrawStaticAssignmentsSettings()
+    private string _occupationNewName = "Character Name@World";
+    private RoleId _occupationNewRole = RoleId.Undefined;
+
+    public void Draw()
     {
         ImGui.Dummy(new Vector2(0, 2f));
         
@@ -39,7 +42,7 @@ public sealed class StaticAssignmentsSettings
 
         ImGui.SameLine();
         ImGui.Text("Replace party numbers with role in Party List");
-        SettingsWindow.ImGuiHelpTooltip(
+        ImGuiExt.ImGuiHelpTooltip(
             "Only works when nameplates set to 'Role letters' or 'Small job icon, role and name'.",
             true);
         
@@ -156,7 +159,4 @@ public sealed class StaticAssignmentsSettings
         ImGui.SetCursorPosY(ImGui.GetCursorPos().Y + 22f);
 
     }
-    
-    private string _occupationNewName = "Character Name@World";
-    private RoleId _occupationNewRole = RoleId.Undefined;
 }
