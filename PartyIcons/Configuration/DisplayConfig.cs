@@ -23,8 +23,8 @@ public class DisplayConfig
     [JsonConverter(typeof(EnumKeyConverter<ZoneType, StatusSelector>))]
     public Dictionary<ZoneType, StatusSelector> StatusSelectors = [];
 
-    public IconCustomizeConfig ExIcon;
-    public IconCustomizeConfig SubIcon;
+    public IconCustomizeConfig JobIcon;
+    public IconCustomizeConfig StatusIcon;
 
     [JsonConstructor]
     private DisplayConfig(DisplayPreset preset, Guid? id, NameplateMode mode)
@@ -67,11 +67,11 @@ public class DisplayConfig
             ? RoleDisplayStyle.Role
             : RoleDisplayStyle.None;
         StatusSelectors = [];
-        ExIcon = new IconCustomizeConfig();
-        SubIcon = new IconCustomizeConfig();
+        JobIcon = new IconCustomizeConfig();
+        StatusIcon = new IconCustomizeConfig();
 
         if (Mode is NameplateMode.RoleLetters) {
-            ExIcon = ExIcon with { Show = false };
+            JobIcon = JobIcon with { Show = false };
         }
 
         Sanitize();

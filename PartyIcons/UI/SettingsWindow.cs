@@ -60,7 +60,10 @@ public sealed class SettingsWindow : IDisposable
         {
             _windowSizeHelper.CheckWindowSize();
 
-            if (ImGui.BeginTabBar("##tabbar"))
+            if (!Plugin.Settings.SelectorsDialogComplete || UpgradeGuideSettings.ForceRedisplay) {
+                UpgradeGuideSettings.Draw();
+            }
+            else if (ImGui.BeginTabBar("##tabbar"))
             {
                 _generalTabText.IsFlashing = Plugin.Settings.TestingMode;
                 
@@ -88,18 +91,6 @@ public sealed class SettingsWindow : IDisposable
                     ImGui.EndTabItem();
                 }
                 
-                // if (ImGui.BeginTabItem("(OLD)"))
-                // {
-                //     if (ImGui.BeginChild("##nameplatesold_content"))
-                //     {
-                //         _oldNameplateSettings.DrawNameplateSettings();
-                //
-                //         ImGui.EndChild();
-                //     }
-                //
-                //     ImGui.EndTabItem();
-                // }
-
                 if (ImGui.BeginTabItem("Appearance"))
                 {
                     if (ImGui.BeginChild("##appearance_content"))
@@ -116,7 +107,7 @@ public sealed class SettingsWindow : IDisposable
                 {
                     if (ImGui.BeginChild("##statuses_content"))
                     {
-                        _statusSettings.Draw();
+                        StatusSettings.Draw();
 
                         ImGui.EndChild();
                     }
@@ -179,7 +170,6 @@ public sealed class SettingsWindow : IDisposable
     private readonly GeneralSettings _generalSettings = new();
     private readonly NameplateSettings _nameplateSettings = new();
     private readonly AppearanceSettings _appearanceSettings = new();
-    private readonly StatusSettings _statusSettings = new();
     private readonly ChatNameSettings _chatNameSettings = new();
     private readonly StaticAssignmentsSettings _staticAssignmentsSettings = new();
 

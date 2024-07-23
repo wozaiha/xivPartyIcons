@@ -80,12 +80,7 @@ public sealed class PlayerStylesheet
         };
     }
 
-    public SeString GetGenericRolePlate(GenericRole genericRole)
-    {
-        return GetGenericRolePlate(genericRole, true);
-    }
-
-    public SeString GetGenericRolePlate(GenericRole genericRole, bool colored)
+    public SeString GetGenericRolePlate(GenericRole genericRole, bool colored = true)
     {
         return colored
             ? genericRole switch

@@ -1,16 +1,14 @@
+using Dalamud.Interface.Colors;
+using Dalamud.Interface.Components;
+using Dalamud.Interface.Utility;
+using Dalamud.Interface.Utility.Raii;
+using ImGuiNET;
+using PartyIcons.UI.Utils;
 using System;
 using System.Diagnostics;
 using System.Net.Http;
 using System.Numerics;
 using System.Text.RegularExpressions;
-using Dalamud.Interface.Colors;
-using Dalamud.Interface.Components;
-using Dalamud.Interface.Style;
-using Dalamud.Interface.Utility;
-using Dalamud.Interface.Utility.Raii;
-using ImGuiNET;
-using PartyIcons.UI.Utils;
-using PartyIcons.Utils;
 
 namespace PartyIcons.UI;
 
@@ -66,6 +64,12 @@ public sealed class GeneralSettings
         ImGui.SameLine();
         ImGui.Text("Display chat message when entering duty");
         ImGuiComponents.HelpMarker("Can be used to determine the duty type before fully loading in.");
+
+        ImGuiExt.Spacer(10);
+        if (ImGuiExt.ButtonEnabledWhen(ImGui.GetIO().KeyCtrl, "Show upgrade guide again")) {
+            UpgradeGuideSettings.ForceRedisplay = true;
+        }
+        ImGuiExt.HoverTooltip("Hold Control to allow clicking");
 
         _notice.DisplayNotice();
     }

@@ -24,7 +24,7 @@ public sealed class StatusSettings
         };
     }
 
-    public void Draw()
+    public static void Draw()
     {
         ImGuiExt.Spacer(2);
 

@@ -15,7 +15,8 @@ public class Settings : IPluginConfiguration
     public const int CurrentVersion = 2;
 
     public int Version { get; set; } = CurrentVersion;
-    public bool ImportedSelectors = false;
+    public bool SelectorsImported = false;
+    public bool SelectorsDialogComplete = false;
 
     public bool ChatContentMessage = true;
     public bool HideLocalPlayerNameplate = false;
@@ -122,14 +123,14 @@ public class Settings : IPluginConfiguration
             Service.Log.Information("Creating a new configuration.");
             config = new Settings
             {
-                ImportedSelectors = true
+                SelectorsImported = true
             };
         }
         else {
             config.Sanitize();
         }
 
-        if (!config.ImportedSelectors) {
+        if (!config.SelectorsImported) {
             config.DisplaySelectors.DisplayOverworld = new DisplaySelector(config.NameplateOverworld);
             config.DisplaySelectors.DisplayDungeon = new DisplaySelector(config.NameplateDungeon);
             config.DisplaySelectors.DisplayRaid = new DisplaySelector(config.NameplateRaid);
@@ -137,7 +138,7 @@ public class Settings : IPluginConfiguration
             config.DisplaySelectors.DisplayFieldOperationParty = new DisplaySelector(config.NameplateBozjaParty);
             config.DisplaySelectors.DisplayFieldOperationOthers = new DisplaySelector(config.NameplateBozjaOthers);
             config.DisplaySelectors.DisplayOthers = new DisplaySelector(config.NameplateOthers);
-            config.ImportedSelectors = true;
+            config.SelectorsImported = true;
             config.Save();
         }
 

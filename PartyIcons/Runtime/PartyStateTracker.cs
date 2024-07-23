@@ -13,7 +13,6 @@ public sealed class PartyStateTracker : IDisposable
     private short _lastPartySize;
 
     public bool InParty => _lastPartySize > 1;
-    public short PartySize => _lastPartySize;
 
     public event Action<PartyChangeType>? OnPartyStateChange;
 

@@ -147,12 +147,12 @@ public sealed class AppearanceSettings
         ImGuiExt.Spacer(6);
         ImGui.TextDisabled("Job Icon");
         using (ImRaii.PushId("jobIcon")) {
-            DrawJobIcon(() => config.ExIcon, icon => config.ExIcon = icon);
+            DrawJobIcon(() => config.JobIcon, icon => config.JobIcon = icon);
         }
 
         ImGui.TextDisabled("Status Icon");
         using (ImRaii.PushId("statusIcon")) {
-            DrawJobIcon(() => config.SubIcon, icon => config.SubIcon = icon);
+            DrawJobIcon(() => config.StatusIcon, icon => config.StatusIcon = icon);
         }
 
         ImGuiExt.Spacer(6);

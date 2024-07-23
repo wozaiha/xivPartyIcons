@@ -53,12 +53,12 @@ public sealed class ViewModeSetter
         ForceRefresh();
     }
 
-    public void ForceRefresh()
+    private void ForceRefresh()
     {
         OnTerritoryChanged(0);
     }
 
-    public void Disable()
+    private void Disable()
     {
         Service.ClientState.TerritoryChanged -= OnTerritoryChanged;
     }

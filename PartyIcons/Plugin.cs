@@ -34,8 +34,6 @@ public sealed class Plugin : IDalamudPlugin
 
         SettingsWindow = new SettingsWindow();
 
-        SeStringUtils.Initialize();
-
         PartyStateTracker = new PartyStateTracker();
         PartyHudView = new PartyListHUDView(PlayerStylesheet);
         RoleTracker = new RoleTracker(Settings, PartyStateTracker);
@@ -69,7 +67,5 @@ public sealed class Plugin : IDalamudPlugin
         ModeSetter.Dispose();
         SettingsWindow.Dispose();
         CommandHandler.Dispose();
-
-        SeStringUtils.Dispose();
     }
 }

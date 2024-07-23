@@ -141,14 +141,14 @@ public sealed class NameplateView : IDisposable
         context.StatusIconId = StatusUtils.OnlineStatusToIconId(context.Status);
         context.GenericRole = genericRole;
 
-        if (!config.ExIcon.Show) {
+        if (!config.JobIcon.Show) {
             context.ShowExIcon = false;
         }
 
         var statusLookup = GetStatusVisibilityForNameplate(context);
         var statusDisplay = statusLookup[(int)context.Status];
 
-        if (context.Status == Status.None || statusDisplay == StatusVisibility.Hide || !config.SubIcon.Show) {
+        if (context.Status == Status.None || statusDisplay == StatusVisibility.Hide || !config.StatusIcon.Show) {
             context.ShowSubIcon = false;
         }
         else if (statusDisplay == StatusVisibility.Important) {
@@ -360,7 +360,7 @@ public sealed class NameplateView : IDisposable
 
     private static unsafe void PrepareNodeInlineSmall(PlateState state, UpdateContext context)
     {
-        var iconConfig = context.DisplayConfig.ExIcon;
+        var iconConfig = context.DisplayConfig.JobIcon;
 
         var iconGroup = context.JobIconGroup;
         var iconPaddingRight = iconGroup.Padding.Right;
@@ -393,7 +393,7 @@ public sealed class NameplateView : IDisposable
             const short subYAdjust = 0;
             const float subIconScale = 0.8f;
 
-            var subIconConfig = context.DisplayConfig.SubIcon;
+            var subIconConfig = context.DisplayConfig.StatusIcon;
 
             var subNode = state.SubIconNode;
             var subIconGroup = context.StatusIconGroup;
@@ -417,7 +417,7 @@ public sealed class NameplateView : IDisposable
         const short yAdjust = -13;
         const float iconScale = 1.55f;
 
-        var iconConfig = context.DisplayConfig.ExIcon;
+        var iconConfig = context.DisplayConfig.JobIcon;
 
         var iconGroup = context.JobIconGroup;
         var iconPaddingRight = iconGroup.Padding.Right;
@@ -441,7 +441,7 @@ public sealed class NameplateView : IDisposable
             const short subYAdjust = -5;
             const float subIconScale = 0.85f;
 
-            var subIconConfig = context.DisplayConfig.SubIcon;
+            var subIconConfig = context.DisplayConfig.StatusIcon;
 
             var subNode = state.SubIconNode;
             var subIconGroup = context.StatusIconGroup;
@@ -468,7 +468,7 @@ public sealed class NameplateView : IDisposable
 
     private static unsafe void PrepareNodeCentered(PlateState state, UpdateContext context)
     {
-        var iconConfig = context.DisplayConfig.ExIcon;
+        var iconConfig = context.DisplayConfig.JobIcon;
 
         var iconGroup = context.JobIconGroup;
 
@@ -498,7 +498,7 @@ public sealed class NameplateView : IDisposable
             const short subYAdjust = -5;
             const float subIconScale = 0.85f;
 
-            var subIconConfig = context.DisplayConfig.SubIcon;
+            var subIconConfig = context.DisplayConfig.StatusIcon;
 
             var subNode = state.SubIconNode;
             var subIconGroup = context.StatusIconGroup;
