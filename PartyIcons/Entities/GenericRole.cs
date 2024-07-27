@@ -1,3 +1,5 @@
+using static FFXIVClientStructs.FFXIV.Component.Excel.IExcelRowWrapper.Delegates;
+
 namespace PartyIcons.Entities;
 
 public enum GenericRole : uint
@@ -9,9 +11,4 @@ public enum GenericRole : uint
     Crafter = 4,
     Gatherer = 5,
     Caster = 6,
-}
-
-public static class JobRoleExtensions
-{
-    public static GenericRole RoleFromByte(byte roleId) => (GenericRole) (roleId - 1);
 }

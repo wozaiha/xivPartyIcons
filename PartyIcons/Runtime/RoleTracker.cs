@@ -170,8 +170,7 @@ public sealed class RoleTracker : IDisposable
                 if (kv.Key.Equals(playerDescription))
                 {
                     var applicableRoles =
-                        GetApplicableRolesForGenericRole(
-                            JobRoleExtensions.RoleFromByte(member.ClassJob.GameData.Role));
+                        GetApplicableRolesForGenericRole(((Job)member.ClassJob.Id).GetRole());
 
                     if (applicableRoles.Contains(kv.Value))
                     {
@@ -199,7 +198,7 @@ public sealed class RoleTracker : IDisposable
             }
 
             var roleToAssign =
-                FindUnassignedRoleForGenericRole(JobRoleExtensions.RoleFromByte(member.ClassJob.GameData.Role));
+                FindUnassignedRoleForGenericRole(((Job)member.ClassJob.Id).GetRole());
 
             if (roleToAssign != default)
             {
