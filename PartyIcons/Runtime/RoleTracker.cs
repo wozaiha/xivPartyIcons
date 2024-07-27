@@ -285,6 +285,9 @@ public sealed class RoleTracker : IDisposable
             case GenericRole.Ranged:
                 return new[] { RoleId.R1, RoleId.R2, RoleId.M1, RoleId.M2 };
 
+            case GenericRole.Caster:
+                return new[] { RoleId.R1, RoleId.R2, RoleId.M1, RoleId.M2 };
+
             case GenericRole.Healer:
                 return new[] { RoleId.H1, RoleId.H2 };
 

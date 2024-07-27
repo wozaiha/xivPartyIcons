@@ -7,7 +7,8 @@ public enum GenericRole : uint
     Ranged = 2,
     Healer = 3,
     Crafter = 4,
-    Gatherer = 5
+    Gatherer = 5,
+    Caster = 6,
 }
 
 public static class JobRoleExtensions
